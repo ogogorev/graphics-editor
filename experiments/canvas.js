@@ -75,7 +75,7 @@ async function drawInitialState(ctx) {
   return canvasPath;
 }
 
-async function main() {
+export async function main() {
   console.log({ w: window.innerWidth, k: window.innerHeight });
 
   const cnv = document.querySelector("#canvas");
@@ -145,10 +145,6 @@ async function main() {
 
   window.requestAnimationFrame(draw);
 }
-
-window.onload = () => {
-  main();
-};
 
 // main();
 
