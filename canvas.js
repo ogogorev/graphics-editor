@@ -73,116 +73,163 @@ function addListeners(canvas) {
 //   document.fonts.add(sankofaDisplay);
 // }
 
-export async function initializeCanvas(editor) {
-  console.log({ w: window.innerWidth, k: window.innerHeight });
+export class Canvas {
+  constructor(canvasId, editor) {
+    console.log({ w: window.innerWidth, k: window.innerHeight });
 
-  const cnv = document.getElementById("canvas");
+    this.cnv = document.getElementById(canvasId);
 
-  cnv.width = W;
-  cnv.height = H;
+    this.cnv.width = W;
+    this.cnv.height = H;
 
-  const ctx = cnv.getContext("2d");
+    this.ctx = this.cnv.getContext("2d");
 
-  // await loadFonts();
+    this.shouldDraw = false;
 
-  console.log("canvas initilized");
-
-  let shouldDraw = false;
-
-  function drawElement(element) {
-    if (element.type === "text") {
-      const font = element.text.font;
-      font.draw(ctx, element.text.label, element.x, element.y);
-    }
+    this.editor = editor;
   }
 
-  function draw() {
-    if (!shouldDraw) {
+  drawElement = (element) => {
+    if (element.type === "text") {
+      const font = element.text.font;
+      font.draw(this.ctx, element.text.label, element.x, element.y);
+    }
+  };
+
+  draw = () => {
+    console.log("draw", this);
+
+    if (!this.shouldDraw) {
       return;
     }
 
-    console.log("draw", { elements: editor.elements });
+    console.log("draw", { elements: this.editor.elements });
 
-    for (let i = 0; i < editor.elements.length; i++) {
-      drawElement(editor.elements[i]);
+    for (let i = 0; i < this.editor.elements.length; i++) {
+      this.drawElement(this.editor.elements[i]);
     }
 
-    window.requestAnimationFrame(draw);
-  }
-
-  function startDrawing() {
-    shouldDraw = true;
-    window.requestAnimationFrame(draw);
-  }
-
-  function stopDrawing() {
-    shouldDraw = false;
-  }
-
-  return {
-    startDrawing,
-    stopDrawing,
+    window.requestAnimationFrame(this.draw);
   };
 
-  // const offscreenCanvas = new OffscreenCanvas(W, H);
-  // const offscreenContext = offscreenCanvas.getContext("2d");
+  startDrawing = () => {
+    this.shouldDraw = true;
+    window.requestAnimationFrame(this.draw);
+  };
 
-  // const canvasPath = await drawInitialState(offscreenContext);
-
-  /// ==========
-
-  // let rectX = 200;
-  // let rectY = 200;
-  // const RECT_W = 50;
-  // const RECT_H = 50;
-
-  // let start = 0;
-  // let elapsed = 0;
-
-  // addListeners(canvas);
-
-  // function draw(timestamp) {
-  //   console.log(timestamp);
-
-  //   ctx.reset();
-
-  //   ctx.drawImage(offscreenCanvas, 0, 0);
-
-  //   const d = timestamp - start;
-
-  //   rectX = rectX + 1;
-
-  //   let scaleX = 1;
-  //   let scaleY = 1;
-
-  //   if (mousePositionX) {
-  //     scaleX = mousePositionX / 300;
-  //     scaleY = mousePositionY / 300;
-  //   }
-
-  //   ctx.save();
-
-  //   ctx.scale(scaleX, scaleY);
-
-  //   ctx.beginPath();
-
-  //   // drawRect(ctx, "blue", mousePositionX, mousePositionY, RECT_W, RECT_H);
-  //   // ctx.translate(mousePositionX, mousePositionY);
-  //   ctx.fill(canvasPath);
-
-  //   // ctx.closePath();
-
-  //   ctx.restore();
-
-  //   start = timestamp;
-  //   elapsed += d;
-
-  //   if (elapsed < 20000) {
-  //     window.requestAnimationFrame(draw);
-  //   }
-  // }
-
-  // window.requestAnimationFrame(draw);
+  stopDrawing = () => {
+    this.shouldDraw = false;
+  };
 }
 
-export function addText() {}
+// export async function initializeCanvas(editor) {
+// console.log({ w: window.innerWidth, k: window.innerHeight });
+
+// const cnv = document.getElementById("canvas");
+
+// cnv.width = W;
+// cnv.height = H;
+
+// const ctx = cnv.getContext("2d");
+
+// await loadFonts();
+
+// console.log("canvas initilized");
+
+// let shouldDraw = false;
+
+// function drawElement(element) {
+//   if (element.type === "text") {
+//     const font = element.text.font;
+//     font.draw(ctx, element.text.label, element.x, element.y);
+//   }
+// }
+
+// function draw() {
+//   if (!shouldDraw) {
+//     return;
+//   }
+
+//   console.log("draw", { elements: editor.elements });
+
+//   for (let i = 0; i < editor.elements.length; i++) {
+//     drawElement(editor.elements[i]);
+//   }
+
+//   window.requestAnimationFrame(draw);
+// }
+
+// function startDrawing() {
+//   shouldDraw = true;
+//   window.requestAnimationFrame(draw);
+// }
+
+// function stopDrawing() {
+//   shouldDraw = false;
+// }
+
+// return {
+//   startDrawing,
+//   stopDrawing,
+// };
+
+// const offscreenCanvas = new OffscreenCanvas(W, H);
+// const offscreenContext = offscreenCanvas.getContext("2d");
+
+// const canvasPath = await drawInitialState(offscreenContext);
+
+/// ==========
+
+// let rectX = 200;
+// let rectY = 200;
+// const RECT_W = 50;
+// const RECT_H = 50;
+
+// let start = 0;
+// let elapsed = 0;
+
+// addListeners(canvas);
+
+// function draw(timestamp) {
+//   console.log(timestamp);
+
+//   ctx.reset();
+
+//   ctx.drawImage(offscreenCanvas, 0, 0);
+
+//   const d = timestamp - start;
+
+//   rectX = rectX + 1;
+
+//   let scaleX = 1;
+//   let scaleY = 1;
+
+//   if (mousePositionX) {
+//     scaleX = mousePositionX / 300;
+//     scaleY = mousePositionY / 300;
+//   }
+
+//   ctx.save();
+
+//   ctx.scale(scaleX, scaleY);
+
+//   ctx.beginPath();
+
+//   // drawRect(ctx, "blue", mousePositionX, mousePositionY, RECT_W, RECT_H);
+//   // ctx.translate(mousePositionX, mousePositionY);
+//   ctx.fill(canvasPath);
+
+//   // ctx.closePath();
+
+//   ctx.restore();
+
+//   start = timestamp;
+//   elapsed += d;
+
+//   if (elapsed < 20000) {
+//     window.requestAnimationFrame(draw);
+//   }
+// }
+
+// window.requestAnimationFrame(draw);
+// }

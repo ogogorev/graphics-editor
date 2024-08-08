@@ -1,24 +1,23 @@
-import { FONTS, loadedFonts, loadFonts } from "./fonts.js";
 import { createText } from "./elements/text.js";
+import { FONTS, loadedFonts, loadFonts } from "./fonts.js";
 
-export async function initializeEditor() {
-  const elements = [];
+export class Editor {
+  constructor() {
+    this.elements = [];
+  }
 
-  await loadFonts();
+  init = async () => {
+    await loadFonts();
+  };
 
-  function addText() {
+  addText = () => {
     const text = createText("Test", loadedFonts[FONTS.SankofaDisplay.id]);
 
-    elements.push({
+    this.elements.push({
       type: "text",
       text,
       x: 100,
       y: 100,
     });
-  }
-
-  return {
-    elements,
-    addText,
   };
 }
