@@ -1,16 +1,21 @@
 import { intializeControls } from "./controls.js";
 import { initializeCanvas } from "./canvas.js";
+import { initializeEditor } from "./editor.js";
 
 async function main() {
-  function addText() {
-    console.log("add text");
-  }
+  const editor = await initializeEditor();
 
   intializeControls({
-    onAddText: addText,
+    onAddText: editor.addText,
   });
 
-  await initializeCanvas();
+  const { startDrawing, stopDrawing } = await initializeCanvas(editor);
+
+  startDrawing();
+
+  setTimeout(() => {
+    stopDrawing();
+  }, 5000);
 }
 
 window.onload = () => {

@@ -1,5 +1,6 @@
 export const FONTS = {
   SankofaDisplay: {
+    id: "SankofaDisplay",
     name: "Sankofa Display",
     // "url('https://fonts.googleapis.com/css2?family=Sankofa+Display&display=swap')"
     // "url(https://fonts.gstatic.com/s/sankofadisplay/v2/Ktk1ALSRd4LucUDghJ2rTqXOoh3HEKOYd4xI5g.woff2) format('woff2')"
@@ -7,11 +8,19 @@ export const FONTS = {
   },
 };
 
-export function loadFont(fontInfo) {
-  const font = new FontFace(
-    fontInfo.name,
-    `url(${fontInfo.url}) format('woff2')`
-  );
+export const loadedFonts = {};
 
-  return font.load();
+export async function loadFont(fontInfo) {
+  const res = await fetch(fontInfo.url);
+  const fontBuffer = res.arrayBuffer();
+
+  const font = await fontBuffer
+    .then((buffer) => Module.decompress(buffer))
+    .then((buffer) => opentype.parse(Uint8Array.from(buffer).buffer));
+
+  loadedFonts[fontInfo.id] = font;
+}
+
+export async function loadFonts() {
+  await loadFont(FONTS.SankofaDisplay);
 }

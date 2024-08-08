@@ -68,24 +68,61 @@ function addListeners(canvas) {
 //   return canvasPath;
 // }
 
-async function loadFonts() {
-  const sankofaDisplay = await loadFont(FONTS.SankofaDisplay);
-  document.fonts.add(sankofaDisplay);
-}
+// async function loadFonts() {
+//   const sankofaDisplay = await loadFont(FONTS.SankofaDisplay);
+//   document.fonts.add(sankofaDisplay);
+// }
 
-export async function initializeCanvas() {
+export async function initializeCanvas(editor) {
   console.log({ w: window.innerWidth, k: window.innerHeight });
 
-  const cnv = document.querySelector("#canvas");
+  const cnv = document.getElementById("canvas");
 
   cnv.width = W;
   cnv.height = H;
 
   const ctx = cnv.getContext("2d");
 
-  await loadFonts();
+  // await loadFonts();
 
   console.log("canvas initilized");
+
+  let shouldDraw = false;
+
+  function drawElement(element) {
+    if (element.type === "text") {
+      const font = element.text.font;
+      font.draw(ctx, element.text.label, element.x, element.y);
+    }
+  }
+
+  function draw() {
+    if (!shouldDraw) {
+      return;
+    }
+
+    console.log("draw", { elements: editor.elements });
+
+    for (let i = 0; i < editor.elements.length; i++) {
+      drawElement(editor.elements[i]);
+    }
+
+    window.requestAnimationFrame(draw);
+  }
+
+  function startDrawing() {
+    shouldDraw = true;
+    window.requestAnimationFrame(draw);
+  }
+
+  function stopDrawing() {
+    shouldDraw = false;
+  }
+
+  return {
+    startDrawing,
+    stopDrawing,
+  };
 
   // const offscreenCanvas = new OffscreenCanvas(W, H);
   // const offscreenContext = offscreenCanvas.getContext("2d");
