@@ -2,6 +2,11 @@ import { Text } from "./elements/text.js";
 import { loadFonts } from "./fonts.js";
 import { intializeControls } from "./controls.js";
 
+const ACTIONS = {
+  SelectedElement: "selected",
+  Dragging: "dragging",
+};
+
 export class Editor {
   currentAction = [];
   activeElementI = -1;
@@ -28,18 +33,24 @@ export class Editor {
       onMouseMove: this.handleMouseMove,
       onMouseUp: this.handleMouseUp,
     });
+
+    // Initial elements
+    this.addText();
   };
 
   handleMouseDown = (event) => {
     this.cursorX = event.offsetX;
     this.cursorY = event.offsetY;
 
-    const selectedI = this.checkIfElementSelected(this.cursorX, this.cursorY);
+    const selectedI = this.getElementAtPos(this.cursorX, this.cursorY);
 
     console.log({ selectedI });
 
     if (selectedI > -1) {
-      this.currentAction = ["dragging", { x: this.cursorX, y: this.cursorY }];
+      this.currentAction = [
+        ACTIONS.Dragging,
+        { x: this.cursorX, y: this.cursorY },
+      ];
       this.activeElementI = selectedI;
     }
 
@@ -56,17 +67,25 @@ export class Editor {
   handleMouseUp = (event) => {
     this.stopUpdating();
 
-    if (this.currentAction[0] === "dragging") {
+    console.log("mouse up");
+
+    if (this.currentAction[0] === ACTIONS.SelectedElement) {
+      this.currentAction = [];
+      this.activeElementI = -1;
+    }
+
+    if (this.currentAction[0] === ACTIONS.Dragging) {
       this.finishDragging();
+      this.currentAction = [ACTIONS.SelectedElement];
     }
 
     this.cursorX = undefined;
     this.cursorY = undefined;
 
-    this.currentAction = [];
+    this.update();
   };
 
-  checkIfElementSelected = (x, y) => {
+  getElementAtPos = (x, y) => {
     for (let i = 0; i < this.elements.length; i++) {
       const box = this.elements[i].box;
 
@@ -98,10 +117,6 @@ export class Editor {
     activeElement.y = activeElement.y + dy;
 
     activeElement.updateBox();
-
-    this.activeElementI = -1;
-
-    this.update();
   };
 
   addText = () => {
@@ -133,7 +148,12 @@ export class Editor {
   };
 
   doUpdate = () => {
-    // console.log("do update", this, this.elements, this.activeElementI);
+    console.log("do update", {
+      t: this,
+      elements: this.elements,
+      activeElementI: this.activeElementI,
+      currentAction: this.currentAction,
+    });
 
     this.canvas.reset();
 
@@ -149,11 +169,22 @@ export class Editor {
 
     const activeElement = this.elements[this.activeElementI];
 
-    if (this.currentAction[0] === "dragging") {
+    if (this.currentAction[0] === ACTIONS.Dragging) {
       const dx = this.cursorX - this.currentAction[1].x;
       const dy = this.cursorY - this.currentAction[1].y;
 
       this.canvas.drawActiveElement(activeElement, dx, dy);
+    }
+
+    if (this.currentAction[0] === ACTIONS.SelectedElement) {
+      this.canvas.drawElement(activeElement);
+
+      this.canvas.drawSelectionBox(
+        activeElement.box.x1,
+        activeElement.box.y1,
+        activeElement.box.x2 - activeElement.box.x1,
+        activeElement.box.y2 - activeElement.box.y1
+      );
     }
   };
 }
