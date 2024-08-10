@@ -1,5 +1,5 @@
-export function intializeControls(callbacks) {
+export function intializeControls(handlers) {
   const addTextButton = document.getElementById("add-text");
 
-  addTextButton.addEventListener("click", callbacks.onAddText);
+  addTextButton.addEventListener("click", handlers.onAddText);
 }

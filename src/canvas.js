@@ -14,28 +14,6 @@ function drawDot(ctx, color, x, y) {
   drawRect(ctx, color, x, y, DOT_WIDTH, DOT_WIDTH);
 }
 
-let mousePositionX;
-let mousePositionY;
-
-function addListeners(canvas) {
-  canvas.addEventListener("mousedown", (event) => {
-    mousePositionX = event.offsetX;
-    mousePositionY = event.offsetY;
-  });
-
-  canvas.addEventListener("mousemove", (event) => {
-    if (mousePositionX) {
-      mousePositionX = event.offsetX;
-      mousePositionY = event.offsetY;
-    }
-  });
-
-  canvas.addEventListener("mouseup", (event) => {
-    mousePositionX = undefined;
-    mousePositionY = undefined;
-  });
-}
-
 // async function drawInitialState(ctx) {
 //   ctx.beginPath();
 //   ctx.rect(0, 0, 150, 100);
@@ -74,7 +52,7 @@ function addListeners(canvas) {
 // }
 
 export class Canvas {
-  constructor(canvasId, editor) {
+  constructor(canvasId) {
     console.log({ w: window.innerWidth, k: window.innerHeight });
 
     this.cnv = document.getElementById(canvasId);
@@ -83,95 +61,51 @@ export class Canvas {
     this.cnv.height = H;
 
     this.ctx = this.cnv.getContext("2d");
-
-    this.shouldDraw = false;
-
-    this.editor = editor;
   }
+
+  addListeners = (handlers) => {
+    this.cnv.addEventListener("mousedown", handlers.onMouseDown);
+    this.cnv.addEventListener("mousemove", handlers.onMouseMove);
+    this.cnv.addEventListener("mouseup", handlers.onMouseUp);
+  };
 
   drawElement = (element) => {
     if (element.type === "text") {
-      const font = element.text.font;
-      font.draw(this.ctx, element.text.label, element.x, element.y);
+      this.drawText(element.font, element.label, element.x, element.y);
     }
   };
 
-  draw = () => {
-    console.log("draw", this);
-
-    if (!this.shouldDraw) {
-      return;
-    }
-
-    console.log("draw", { elements: this.editor.elements });
-
-    for (let i = 0; i < this.editor.elements.length; i++) {
-      this.drawElement(this.editor.elements[i]);
-    }
-
-    window.requestAnimationFrame(this.draw);
+  drawText = (font, label, x, y) => {
+    font.draw(this.ctx, label, x, y);
   };
 
-  startDrawing = () => {
-    this.shouldDraw = true;
-    window.requestAnimationFrame(this.draw);
+  drawActiveElement = (element, x, y) => {
+    this.ctx.save();
+    this.ctx.translate(x, y);
+    this.drawElement(element);
+    this.ctx.restore();
   };
 
-  stopDrawing = () => {
-    this.shouldDraw = false;
+  reset = () => {
+    this.ctx.reset();
   };
+
+  // draw = (elements) => {
+  //   // console.log("draw", this);
+
+  //   // if (!this.shouldDraw) {
+  //   //   return;
+  //   // }
+
+  //   console.log("draw", { elements });
+
+  //   for (let i = 0; i < elements.length; i++) {
+  //     this.drawElement(elements[i]);
+  //   }
+
+  //   // window.requestAnimationFrame(this.draw);
+  // };
 }
-
-// export async function initializeCanvas(editor) {
-// console.log({ w: window.innerWidth, k: window.innerHeight });
-
-// const cnv = document.getElementById("canvas");
-
-// cnv.width = W;
-// cnv.height = H;
-
-// const ctx = cnv.getContext("2d");
-
-// await loadFonts();
-
-// console.log("canvas initilized");
-
-// let shouldDraw = false;
-
-// function drawElement(element) {
-//   if (element.type === "text") {
-//     const font = element.text.font;
-//     font.draw(ctx, element.text.label, element.x, element.y);
-//   }
-// }
-
-// function draw() {
-//   if (!shouldDraw) {
-//     return;
-//   }
-
-//   console.log("draw", { elements: editor.elements });
-
-//   for (let i = 0; i < editor.elements.length; i++) {
-//     drawElement(editor.elements[i]);
-//   }
-
-//   window.requestAnimationFrame(draw);
-// }
-
-// function startDrawing() {
-//   shouldDraw = true;
-//   window.requestAnimationFrame(draw);
-// }
-
-// function stopDrawing() {
-//   shouldDraw = false;
-// }
-
-// return {
-//   startDrawing,
-//   stopDrawing,
-// };
 
 // const offscreenCanvas = new OffscreenCanvas(W, H);
 // const offscreenContext = offscreenCanvas.getContext("2d");
