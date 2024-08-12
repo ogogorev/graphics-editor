@@ -23,6 +23,11 @@ export class Text {
     this.updateBox();
   }
 
+  setLabel = (newLabel) => {
+    this.label = newLabel;
+    this.updateBox();
+  };
+
   updateBox = () => {
     this.path = this.font.getPath(this.label, this.x, this.y);
     this.box = this.path.getBoundingBox();

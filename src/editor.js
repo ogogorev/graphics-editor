@@ -3,8 +3,8 @@ import { loadFonts } from "./fonts.js";
 import { intializeControls } from "./controls.js";
 
 const ACTIONS = {
-  SelectedElement: "selected",
   Dragging: "dragging",
+  SelectedElement: "selected",
 };
 
 export class Editor {
@@ -32,10 +32,15 @@ export class Editor {
       onMouseDown: this.handleMouseDown,
       onMouseMove: this.handleMouseMove,
       onMouseUp: this.handleMouseUp,
+      onKeyDown: this.handleKeyDown,
     });
 
     // Initial elements
     this.addText();
+  };
+
+  getActiveElement = () => {
+    return this.elements[this.activeElementI];
   };
 
   handleMouseDown = (event) => {
@@ -70,19 +75,39 @@ export class Editor {
     console.log("mouse up");
 
     if (this.currentAction[0] === ACTIONS.SelectedElement) {
-      this.currentAction = [];
-      this.activeElementI = -1;
+      this.deselectElement();
     }
 
     if (this.currentAction[0] === ACTIONS.Dragging) {
       this.finishDragging();
-      this.currentAction = [ACTIONS.SelectedElement];
+      this.selectElement(this.activeElementI);
     }
 
     this.cursorX = undefined;
     this.cursorY = undefined;
 
     this.update();
+  };
+
+  handleKeyDown = (event) => {
+    console.log("key down", event);
+
+    if (this.currentAction[0] !== ACTIONS.SelectedElement) {
+      return;
+    }
+
+    if (event.key === "Escape") {
+      this.deselectElement();
+      this.update();
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      this.getActiveElement().setLabel(event.target.value);
+      this.update();
+
+      clearTimeout(timeoutId);
+    }, 0);
   };
 
   getElementAtPos = (x, y) => {
@@ -117,6 +142,29 @@ export class Editor {
     activeElement.y = activeElement.y + dy;
 
     activeElement.updateBox();
+  };
+
+  selectElement = (i) => {
+    this.activeElementI = i;
+    this.currentAction = [ACTIONS.SelectedElement];
+
+    if (this.getActiveElement().type === "text") {
+      const input = document.getElementById("edit-text");
+      input.addEventListener("keydown", this.handleKeyDown);
+
+      input.value = this.getActiveElement().label;
+      input.focus();
+    }
+  };
+
+  deselectElement = () => {
+    this.currentAction = [];
+    this.activeElementI = -1;
+
+    const input = document.getElementById("edit-text");
+    input.value = "";
+
+    input.removeEventListener("keydown", this.handleKeyDown);
   };
 
   addText = () => {
