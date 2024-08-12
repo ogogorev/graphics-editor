@@ -11,8 +11,15 @@ export class Canvas {
 
     this.cnv = document.getElementById(canvasId);
 
-    this.cnv.width = W;
-    this.cnv.height = H;
+    console.log("init canvas", window.devicePixelRatio);
+
+    const dpi = window.devicePixelRatio;
+
+    this.cnv.style.width = W + "px";
+    this.cnv.style.height = H + "px";
+
+    this.cnv.width = W * dpi;
+    this.cnv.height = H * dpi;
 
     this.ctx = this.cnv.getContext("2d");
   }
@@ -99,7 +106,10 @@ export class Canvas {
     this.ctx.restore();
   };
 
-  reset = () => {
+  prepareFrame = () => {
     this.ctx.reset();
+
+    const dpi = window.devicePixelRatio;
+    this.ctx.scale(dpi, dpi);
   };
 }

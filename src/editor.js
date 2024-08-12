@@ -203,7 +203,7 @@ export class Editor {
       currentAction: this.currentAction,
     });
 
-    this.canvas.reset();
+    this.canvas.prepareFrame();
 
     for (let i = 0; i < this.elements.length; i++) {
       if (i !== this.activeElementI) {
