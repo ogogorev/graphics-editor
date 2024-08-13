@@ -1,6 +1,7 @@
 import { Text } from "./elements/text.js";
 import { loadFonts } from "./fonts.js";
 import { intializeControls } from "./controls.js";
+import { getCursorForElementBox, setDocumentCursor } from "./utils.js";
 
 const ACTIONS = {
   Dragging: "dragging",
@@ -47,7 +48,7 @@ export class Editor {
     this.cursorX = event.offsetX;
     this.cursorY = event.offsetY;
 
-    const selectedI = this.getElementAtPos(this.cursorX, this.cursorY);
+    const selectedI = this.checkColisionsAtXY(this.cursorX, this.cursorY);
 
     console.log({ selectedI });
 
@@ -67,6 +68,9 @@ export class Editor {
       this.cursorX = event.offsetX;
       this.cursorY = event.offsetY;
     }
+
+    const elementI = this.checkColisionsAtXY(event.offsetX, event.offsetY);
+    this.updateCursor(event.offsetX, event.offsetY, elementI);
   };
 
   handleMouseUp = (event) => {
@@ -110,18 +114,34 @@ export class Editor {
     }, 0);
   };
 
-  getElementAtPos = (x, y) => {
+  checkColisionsAtXY = (x, y) => {
     for (let i = 0; i < this.elements.length; i++) {
-      const box = this.elements[i].box;
+      const outerBox = this.elements[i].outerBox;
 
-      console.log("check", { x, y, box });
+      console.log("check", { x, y, outerBox });
 
-      if (x > box.x1 && y > box.y1 && x < box.x2 && y < box.y2) {
+      if (
+        x > outerBox.x1 &&
+        y > outerBox.y1 &&
+        x < outerBox.x2 &&
+        y < outerBox.y2
+      ) {
         return i;
       }
     }
 
     return -1;
+  };
+
+  updateCursor = (x, y, elementI) => {
+    if (elementI < 0) {
+      setDocumentCursor();
+      return;
+    }
+
+    const innerBox = this.elements[elementI].box;
+    const cursor = getCursorForElementBox(x, y, innerBox);
+    setDocumentCursor(cursor);
   };
 
   finishDragging = () => {
@@ -228,10 +248,10 @@ export class Editor {
       this.canvas.drawElement(activeElement);
 
       this.canvas.drawSelectionBox(
-        activeElement.box.x1,
-        activeElement.box.y1,
-        activeElement.box.x2 - activeElement.box.x1,
-        activeElement.box.y2 - activeElement.box.y1
+        activeElement.outerBox.x1,
+        activeElement.outerBox.y1,
+        activeElement.outerBox.x2 - activeElement.outerBox.x1,
+        activeElement.outerBox.y2 - activeElement.outerBox.y1
       );
     }
   };

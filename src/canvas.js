@@ -1,9 +1,11 @@
+import {
+  SELECTION_BOX_CONTROL_POINT_SIZE,
+  SELECTION_BOX_OFFSET,
+  SELECTION_COLOR,
+} from "./consts.js";
+
 const W = window.innerWidth;
 const H = window.innerHeight;
-
-const SELECTION_BOX_OFFSET = 8;
-const SELECTION_BOX_CONTROL_POINT_SIZE = 8;
-const SELECTION_COLOR = "#34b4eb";
 
 export class Canvas {
   constructor(canvasId) {
@@ -31,7 +33,6 @@ export class Canvas {
 
     this.cnv.addEventListener("click", handlers.onClick);
   };
-
   drawRect = (x, y, w, h, fillColor, strokeColor) => {
     if (fillColor) {
       this.ctx.fillStyle = fillColor;
@@ -49,16 +50,24 @@ export class Canvas {
   };
 
   drawSelectionBox = (x, y, w, h) => {
-    const boxX = x - SELECTION_BOX_OFFSET;
-    const boxY = y - SELECTION_BOX_OFFSET;
-    const boxW = w + SELECTION_BOX_OFFSET * 2;
-    const boxH = h + SELECTION_BOX_OFFSET * 2;
-
-    this.drawRect(boxX, boxY, boxW, boxH, undefined, SELECTION_COLOR);
+    // TODO: Use x, y, w, h directly
+    const boxX = x;
+    const boxY = y;
+    const boxW = w;
+    const boxH = h;
 
     this.drawRect(
-      boxX - SELECTION_BOX_CONTROL_POINT_SIZE / 2,
-      boxY - SELECTION_BOX_CONTROL_POINT_SIZE / 2,
+      boxX + SELECTION_BOX_OFFSET,
+      boxY + SELECTION_BOX_OFFSET,
+      boxW - SELECTION_BOX_OFFSET * 2,
+      boxH - SELECTION_BOX_OFFSET * 2,
+      undefined,
+      SELECTION_COLOR
+    );
+
+    this.drawRect(
+      boxX,
+      boxY,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       "white",
@@ -66,8 +75,8 @@ export class Canvas {
     );
 
     this.drawRect(
-      boxX + boxW - SELECTION_BOX_CONTROL_POINT_SIZE / 2,
-      boxY - SELECTION_BOX_CONTROL_POINT_SIZE / 2,
+      boxX + boxW - SELECTION_BOX_CONTROL_POINT_SIZE,
+      boxY,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       "white",
@@ -75,8 +84,8 @@ export class Canvas {
     );
 
     this.drawRect(
-      boxX - SELECTION_BOX_CONTROL_POINT_SIZE / 2,
-      boxY + boxH - SELECTION_BOX_CONTROL_POINT_SIZE / 2,
+      boxX,
+      boxY + boxH - SELECTION_BOX_CONTROL_POINT_SIZE,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       "white",
@@ -84,8 +93,8 @@ export class Canvas {
     );
 
     this.drawRect(
-      boxX + boxW - SELECTION_BOX_CONTROL_POINT_SIZE / 2,
-      boxY + boxH - SELECTION_BOX_CONTROL_POINT_SIZE / 2,
+      boxX + boxW - SELECTION_BOX_CONTROL_POINT_SIZE,
+      boxY + boxH - SELECTION_BOX_CONTROL_POINT_SIZE,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       "white",
