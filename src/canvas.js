@@ -7,6 +7,18 @@ import {
 const W = window.innerWidth;
 const H = window.innerHeight;
 
+// TODO: Move to consts
+const RESIZE_DIRECTION = {
+  TopLeft: "TopLeft",
+  TopRight: "TopRight",
+  BottomLeft: "BottomLeft",
+  BottomRight: "BottomRight",
+  Top: "Top",
+  Bottom: "Bottom",
+  Left: "Left",
+  Right: "Right",
+};
+
 export class Canvas {
   constructor(canvasId) {
     console.log({ w: window.innerWidth, k: window.innerHeight });
@@ -33,6 +45,7 @@ export class Canvas {
 
     this.cnv.addEventListener("click", handlers.onClick);
   };
+
   drawRect = (x, y, w, h, fillColor, strokeColor) => {
     if (fillColor) {
       this.ctx.fillStyle = fillColor;
@@ -45,7 +58,7 @@ export class Canvas {
     }
   };
 
-  drawText = (font, label, x, y) => {
+  drawTextWithFont = (font, label, x, y) => {
     font.draw(this.ctx, label, x, y);
   };
 
@@ -102,17 +115,32 @@ export class Canvas {
     );
   };
 
-  drawElement = (element) => {
+  drawElementContent = (element) => {
     if (element.type === "text") {
-      this.drawText(element.font, element.label, element.x, element.y);
+      this.drawTextWithFont(element.font, element.label, 0, element.fontSize);
     }
   };
 
-  drawActiveElement = (element, x, y) => {
+  drawElement = (element, x, y, scaleX, scaleY) => {
     this.ctx.save();
-    this.ctx.translate(x, y);
-    this.drawElement(element);
+
+    this.ctx.translate(x ?? element.x, y ?? element.y);
+    this.ctx.scale(scaleX ?? element.scaleX, scaleY ?? element.scaleY);
+
+    this.drawElementContent(element);
+
     this.ctx.restore();
+  };
+
+  drawDashedLine = (startX, startY, endX, endY) => {
+    this.ctx.beginPath();
+    this.ctx.strokeStyle = "green";
+    this.ctx.setLineDash([5, 5]);
+    this.ctx.lineWidth = 2;
+    this.ctx.moveTo(startX, startY);
+    this.ctx.lineTo(endX, endY);
+    this.ctx.stroke();
+    this.ctx.setLineDash([]);
   };
 
   prepareFrame = () => {
