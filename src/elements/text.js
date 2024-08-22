@@ -1,5 +1,6 @@
 import { OUTER_BOX_OFFSET } from "../consts.js";
 import { FONTS, loadedFonts } from "../fonts.js";
+import { getInnerBox, getOuterBox } from "../geometry.js";
 
 export class Text {
   type = "text";
@@ -13,8 +14,8 @@ export class Text {
   y;
   scaleX = 1;
   scaleY = 1;
-  innerBox;
-  outerBox;
+
+  localBox;
 
   constructor(label, x, y) {
     this.label = "Text";
@@ -32,6 +33,15 @@ export class Text {
     this.update();
   };
 
+  setProps = (x, y, scaleX, scaleY) => {
+    if (x != null) this.x = x;
+    if (y != null) this.y = y;
+    if (scaleX != null) this.scaleX = scaleX;
+    if (scaleY != null) this.scaleY = scaleY;
+
+    this.updateBox();
+  };
+
   update = () => {
     this.updatePath();
     this.updateBox();
@@ -39,41 +49,32 @@ export class Text {
 
   updatePath = () => {
     this.path = this.font.getPath(this.label, 0, this.fontSize, this.fontSize);
-
-    // const fontSize = 72;
-    // const fontScale = (1 / this.font.unitsPerEm) * fontSize;
-
-    // const topY = -(this.font.ascender * fontScale);
-    // const bottomY = -(this.font.descender * fontScale);
-
-    // console.log("text path", this.path, {
-    //   asc: this.font.ascender,
-    //   desc: this.font.descender,
-    //   u: this.font.unitsPerEm,
-    //   fontScale,
-    //   topY,
-    //   bottomY,
-    // });
   };
 
   updateBox = () => {
-    const box = this.path.getBoundingBox();
-    const { x1, y1, x2, y2 } = box;
-
-    console.log("update box", { box, p: this.path });
-
-    this.innerBox = {
-      x1: x1 + this.x,
-      y1: y1 + this.y,
-      x2: x2 + this.x,
-      y2: y2 + this.y,
-    };
-
-    this.outerBox = {
-      x1: this.innerBox.x1 - OUTER_BOX_OFFSET,
-      y1: this.innerBox.y1 - OUTER_BOX_OFFSET,
-      x2: this.innerBox.x2 + OUTER_BOX_OFFSET,
-      y2: this.innerBox.y2 + OUTER_BOX_OFFSET,
-    };
+    this.localBox = this.path.getBoundingBox();
   };
+
+  get w() {
+    return (this.localBox.x2 - this.localBox.x1) * this.scaleX;
+  }
+
+  get h() {
+    return (this.localBox.y2 - this.localBox.y1) * this.scaleY;
+  }
+
+  get innerBox() {
+    return getInnerBox(this.x, this.y, this.localBox, this.scaleX, this.scaleY);
+  }
+
+  get outerBox() {
+    return getOuterBox(
+      this.x,
+      this.y,
+      this.localBox,
+      this.scaleX,
+      this.scaleY,
+      OUTER_BOX_OFFSET
+    );
+  }
 }

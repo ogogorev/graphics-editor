@@ -1,14 +1,4 @@
-export const ELEMENT_BOX_POSITION = {
-  InnerBox: "InnerBox",
-  TopLeft: "TopLeft",
-  TopRight: "TopRight",
-  BottomLeft: "BottomLeft",
-  BottomRight: "BottomRight",
-  Top: "Top",
-  Bottom: "Bottom",
-  Left: "Left",
-  Right: "Right",
-};
+import { ELEMENT_BOX_POSITION } from "./consts.js";
 
 // TODO: I should return a vector here
 export const getElementBoxPosition = (x, y, innerBox) => {
@@ -51,30 +41,6 @@ export const getElementBoxPosition = (x, y, innerBox) => {
 
   if (y >= innerBox.y2) {
     return ELEMENT_BOX_POSITION.Bottom;
-  }
-};
-
-export const getVectorByPosition = (position) => {
-  switch (position) {
-    case ELEMENT_BOX_POSITION.TopLeft:
-      return [-1, -1];
-    case ELEMENT_BOX_POSITION.BottomRight:
-      return [1, 1];
-    case ELEMENT_BOX_POSITION.TopRight:
-      return [1, -1];
-    case ELEMENT_BOX_POSITION.BottomLeft:
-      return [-1, 1];
-    case ELEMENT_BOX_POSITION.Left:
-      return [-1, 0];
-    case ELEMENT_BOX_POSITION.Right:
-      return [1, 0];
-    case ELEMENT_BOX_POSITION.Top:
-      return [0, -1];
-    case ELEMENT_BOX_POSITION.Bottom:
-      return [0, 1];
-    case ELEMENT_BOX_POSITION.InnerBox:
-    default:
-      return [0, 0];
   }
 };
 

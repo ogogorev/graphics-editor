@@ -2,12 +2,12 @@ import { Text } from "./elements/text.js";
 import { loadFonts } from "./fonts.js";
 import { intializeControls } from "./controls.js";
 import {
-  ELEMENT_BOX_POSITION,
   getCursorForElementBoxPosition,
   getElementBoxPosition,
-  getVectorByPosition,
   setDocumentCursor,
 } from "./utils.js";
+import { calculateResizedElementPosition, getOuterBox } from "./geometry.js";
+import { ELEMENT_BOX_POSITION, OUTER_BOX_OFFSET } from "./consts.js";
 
 const ACTIONS = {
   Dragging: "Dragging",
@@ -126,6 +126,7 @@ export class Editor {
     }
 
     if (this.currentAction[0] === ACTIONS.Resizing) {
+      this.finishResizing();
       this.selectElement(this.activeElementI);
     }
 
@@ -190,10 +191,28 @@ export class Editor {
 
     const activeElement = this.elements[this.activeElementI];
 
+    // TODO: Use setProps here
+
     activeElement.x = activeElement.x + dx;
     activeElement.y = activeElement.y + dy;
 
     activeElement.updateBox();
+  };
+
+  finishResizing = () => {
+    const activeElement = this.getActiveElement();
+    activeElement.setProps(
+      ...calculateResizedElementPosition(
+        activeElement,
+        this.currentAction[1].direction,
+        this.cursorX,
+        this.cursorY,
+        this.currentAction[1].x,
+        this.currentAction[1].y
+      )
+    );
+
+    this.currentAction = [];
   };
 
   selectElement = (i) => {
@@ -290,84 +309,32 @@ export class Editor {
     if (this.currentAction[0] === ACTIONS.Resizing) {
       const { x: startX, y: startY, direction } = this.currentAction[1];
 
-      // console.log(this.currentAction);
+      const [x, y, scaleX, scaleY] = calculateResizedElementPosition(
+        activeElement,
+        direction,
+        this.cursorX,
+        this.cursorY,
+        startX,
+        startY
+      );
 
-      // const scale = getScaleForElement(
-      //   activeElement,
-      //   x,
-      //   y,
-      //   this.cursorX,
-      //   this.cursorY
-      // );
+      this.canvas.drawElement(activeElement, x, y, scaleX, scaleY);
 
-      const [kX, kY] = getVectorByPosition(direction);
+      const outerBox = getOuterBox(
+        x,
+        y,
+        activeElement.localBox,
+        scaleX,
+        scaleY,
+        OUTER_BOX_OFFSET
+      );
 
-      const distX = (this.cursorX - startX) * kX;
-      const distY = (this.cursorY - startY) * kY;
-
-      const currW = activeElement.innerBox.x2 - activeElement.innerBox.x1;
-      const currH = activeElement.innerBox.y2 - activeElement.innerBox.y1;
-
-      const newW = currW + distX;
-      const newH = currH + distY;
-
-      const scale = [newW / currW, newH / currH];
-
-      const box = activeElement.innerBox;
-
-      let x = activeElement.x;
-      let y = activeElement.y;
-
-      console.log({ xBefore: x, x1: box.x1 });
-      // console.log({ yBefore: y, y1: box.y1, kY, distY, scale: scale[1] });
-
-      const scaleX = scale[0] - 1;
-      const innerX = box.x1 - x;
-
-      if (kX > 0) x = x - innerX * scaleX;
-      if (kX < 0) x = x - innerX * scaleX - currW * scaleX;
-
-      const scaleY = scale[1] - 1;
-      const innerY = box.y1 - y;
-
-      if (kY > 0) y = y - innerY * scaleY;
-      if (kY < 0) y = y - innerY * scaleY - currH * scaleY;
-
-      console.log({ xAfter: x, scaleX, currW, innerX });
-      // console.log({ yAfter: y, scaleY, currH, innerY });
-
-      this.canvas.drawElement(activeElement, x, y, scale[0], scale[1]);
-
-      // this.canvas.drawDashedLine(box.x2, box.y2, box.x2 - 1000, box.y2);
-      // this.canvas.drawDashedLine(box.x2, box.y2, box.x2, box.y2 - 100);
-
-      // this.canvas.drawSelectionBox(
-      //   activeElement.outerBox.x1,
-      //   activeElement.outerBox.y1,
-      //   activeElement.outerBox.x2 - activeElement.outerBox.x1,
-      //   activeElement.outerBox.y2 - activeElement.outerBox.y1
-      // );
-
-      // this.canvas.drawSelectionBox(
-      //   activeElement.x,
-      //   activeElement.y,
-      //   activeElement.outerBox.x2 - activeElement.outerBox.x1,
-      //   activeElement.outerBox.y2 - activeElement.outerBox.y1
-      // );
-
-      const x1 = activeElement.innerBox.x1;
-      const y1 = activeElement.innerBox.y1;
-      const x2 = activeElement.innerBox.x2 * scale[0];
-      const y2 = activeElement.innerBox.y2 * scale[1];
-
-      // this.canvas.drawSelectionBox(x1, y1, x2 - x1, y2 - y1);
-
-      // this.canvas.drawSelectionBox(
-      //   activeElement.outerBox.x1,
-      //   activeElement.outerBox.y1,
-      //   scale[0] * (activeElement.outerBox.x2 - activeElement.outerBox.x1),
-      //   scale[1] * (activeElement.outerBox.y2 - activeElement.outerBox.y1)
-      // );
+      this.canvas.drawSelectionBox(
+        outerBox.x1,
+        outerBox.y1,
+        outerBox.x2 - outerBox.x1,
+        outerBox.y2 - outerBox.y1
+      );
     }
   };
 }
@@ -375,8 +342,6 @@ export class Editor {
 /**
  *
  * TODO:
- *  - Save scale for element after resizing
  *  - Do not allow resizing if element is not selected
- *  - Draw selection box properly
  *
  */
