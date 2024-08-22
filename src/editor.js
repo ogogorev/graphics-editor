@@ -88,8 +88,8 @@ export class Editor {
       );
 
       if (position === ELEMENT_BOX_POSITION.InnerBox) {
-        this.setCurrentAction(createDraggingAction(this.cursorX, this.cursorY));
-      } else {
+        this.startDragging();
+      } else if (this.currentAction[0] === ACTIONS.SelectedElement) {
         this.setCurrentAction(
           createResizingAction(this.cursorX, this.cursorY, position)
         );
@@ -105,10 +105,7 @@ export class Editor {
       this.cursorY = event.offsetY;
     }
 
-    // if (!this.currentAction[0]) {
-    const elementI = this.checkColisionsAtXY(event.offsetX, event.offsetY);
-    this.updateCursor(event.offsetX, event.offsetY, elementI);
-    // }
+    this.updateCursor(event.offsetX, event.offsetY);
   };
 
   handleMouseUp = (event) => {
@@ -174,15 +171,35 @@ export class Editor {
     return -1;
   };
 
-  updateCursor = (x, y, elementI) => {
+  updateCursor = (x, y) => {
+    if (
+      this.currentAction[0] === ACTIONS.Dragging ||
+      this.currentAction[0] === ACTIONS.Resizing
+    ) {
+      return;
+    }
+
+    const elementI = this.checkColisionsAtXY(x, y);
+
     if (elementI < 0) {
       setDocumentCursor();
       return;
     }
 
-    const innerBox = this.elements[elementI].innerBox;
-    const position = getElementBoxPosition(x, y, innerBox);
-    setDocumentCursor(getCursorForElementBoxPosition(position));
+    if (!this.currentAction[0]) {
+      setDocumentCursor("grab");
+    }
+
+    if (this.currentAction[0] === ACTIONS.SelectedElement) {
+      const innerBox = this.elements[elementI].innerBox;
+      const position = getElementBoxPosition(x, y, innerBox);
+      setDocumentCursor(getCursorForElementBoxPosition(position));
+    }
+  };
+
+  startDragging = () => {
+    this.setCurrentAction(createDraggingAction(this.cursorX, this.cursorY));
+    setDocumentCursor("grabbing");
   };
 
   finishDragging = () => {
@@ -342,6 +359,5 @@ export class Editor {
 /**
  *
  * TODO:
- *  - Do not allow resizing if element is not selected
  *
  */

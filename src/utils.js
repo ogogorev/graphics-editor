@@ -66,5 +66,7 @@ export const getCursorForElementBoxPosition = (position) => {
 };
 
 export const setDocumentCursor = (cursor) => {
-  document.body.style.cursor = cursor;
+  if (document.body.style.cursor !== cursor) {
+    document.body.style.cursor = cursor ?? "";
+  }
 };
