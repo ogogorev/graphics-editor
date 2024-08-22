@@ -259,6 +259,8 @@ export class Editor {
     const text = new Text("Text", 400, 100);
     this.elements.push(text);
 
+    this.selectElement(this.elements.length - 1);
+
     this.update();
   };
 
