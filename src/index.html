@@ -12,6 +12,12 @@
     <style>
         html, body {
             margin: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .control-panel {
+            position:absolute
         }
 
         #edit-text {
@@ -24,8 +30,10 @@
     </style>
 </head>
 <body>
-    <div>
+    <div class="control-panel">
         <button id="add-text" type="button">Add text</button>
+        <button id="zoom-in" type="button">+</button>
+        <button id="zoom-out" type="button">-</button>
     </div>
     
     <canvas id="canvas"></canvas>

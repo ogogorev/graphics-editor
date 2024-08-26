@@ -13,7 +13,11 @@ const ACTIONS = {
   Dragging: "Dragging",
   SelectedElement: "Selected",
   Resizing: "Resizing",
+  Moving: "Moving",
 };
+
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 8;
 
 // TODO: Move away
 const createDraggingAction = (x, y) => {
@@ -30,12 +34,23 @@ const createResizingAction = (x, y, direction) => {
   return [ACTIONS.Resizing, { x, y, direction }];
 };
 
+// TODO: Move away
+const createMovingAction = (x, y) => {
+  return [ACTIONS.Moving, { startX: x, startY: y }];
+};
+
 export class Editor {
   currentAction = [];
   activeElementI = -1;
 
+  // TODO: define a var with mouse pos and in canvas position?
   cursorX;
   cursorY;
+
+  zoom = 1;
+
+  viewportOffsetX = 0;
+  viewportOffsetY = 0;
 
   shouldUpdate = false;
 
@@ -49,12 +64,15 @@ export class Editor {
 
     intializeControls({
       onAddText: this.addText,
+      onZoomIn: this.handleZoomInClick,
+      onZoomOut: this.handleZoomOutClick,
     });
 
     this.canvas.addListeners({
       onMouseDown: this.handleMouseDown,
       onMouseMove: this.handleMouseMove,
       onMouseUp: this.handleMouseUp,
+      onWheel: this.handleWheel,
       onKeyDown: this.handleKeyDown,
     });
 
@@ -70,9 +88,67 @@ export class Editor {
     this.currentAction = action;
   };
 
+  updateViewport = (zoom, dx, dy, focusX, focusY) => {
+    // Deliberately assuming that zoom is not provided in such a case
+    if (dx != null && dy != null) {
+      this.viewportOffsetX -= dx;
+      this.viewportOffsetY -= dy;
+      return;
+    }
+
+    focusX = focusX ?? this.canvas.w / 2;
+    focusY = focusY ?? this.canvas.h / 2;
+
+    const ratioX = focusX / this.canvas.w;
+    const ratioY = focusY / this.canvas.h;
+
+    const currW = this.canvas.w / this.zoom;
+    const currH = this.canvas.h / this.zoom;
+
+    const zoomedFocusX = this.viewportOffsetX + ratioX * currW;
+    const zoomedFocusY = this.viewportOffsetY + ratioY * currH;
+
+    zoom = zoom ?? this.zoom;
+    zoom = Math.max(Math.min(zoom, MAX_ZOOM), MIN_ZOOM);
+
+    const newW = this.canvas.w / zoom;
+    const newH = this.canvas.h / zoom;
+
+    const newOffsetX = zoomedFocusX - ratioX * newW;
+    const newOffsetY = zoomedFocusY - ratioY * newH;
+
+    console.log("updateViewport", { zoom, focusX, newW, newOffsetX });
+
+    this.zoom = zoom;
+    this.viewportOffsetX = newOffsetX;
+    this.viewportOffsetY = newOffsetY;
+  };
+
+  handleZoomInClick = () => {
+    this.updateViewport(this.zoom * 2);
+    this.update();
+  };
+
+  handleZoomOutClick = () => {
+    this.updateViewport(this.zoom / 2);
+    this.update();
+  };
+
+  getCanvasPosition = (x, y) => {
+    return [
+      this.viewportOffsetX + x / this.zoom,
+      this.viewportOffsetY + y / this.zoom,
+    ];
+  };
+
+  setCursorPosition = (x, y) => {
+    const canvasPosition = this.getCanvasPosition(x, y);
+    this.cursorX = canvasPosition[0] || undefined;
+    this.cursorY = canvasPosition[1] || undefined;
+  };
+
   handleMouseDown = (event) => {
-    this.cursorX = event.offsetX;
-    this.cursorY = event.offsetY;
+    this.setCursorPosition(event.offsetX, event.offsetY);
 
     const elementI = this.checkColisionsAtXY(this.cursorX, this.cursorY);
 
@@ -94,6 +170,9 @@ export class Editor {
           createResizingAction(this.cursorX, this.cursorY, position)
         );
       }
+    } else {
+      this.activeElementI = -1;
+      this.setCurrentAction(createMovingAction(this.cursorX, this.cursorY));
     }
 
     this.startUpdating();
@@ -101,11 +180,10 @@ export class Editor {
 
   handleMouseMove = (event) => {
     if (this.currentAction[0]) {
-      this.cursorX = event.offsetX;
-      this.cursorY = event.offsetY;
+      this.setCursorPosition(event.offsetX, event.offsetY);
     }
 
-    this.updateCursor(event.offsetX, event.offsetY);
+    this.updateCursor(...this.getCanvasPosition(event.offsetX, event.offsetY));
   };
 
   handleMouseUp = (event) => {
@@ -127,10 +205,34 @@ export class Editor {
       this.selectElement(this.activeElementI);
     }
 
-    this.cursorX = undefined;
-    this.cursorY = undefined;
+    if (this.currentAction[0] === ACTIONS.Moving) {
+      this.finishMoving();
+    }
+
+    this.setCursorPosition();
 
     this.update();
+  };
+
+  handleWheel = (event) => {
+    console.log("wheel", event);
+
+    this.updateViewport(
+      this.zoom - event.deltaY * 0.01,
+      undefined,
+      undefined,
+      event.offsetX,
+      event.offsetY
+    );
+
+    if (!this.shouldUpdate) {
+      this.startUpdating();
+
+      const timeoutId = setTimeout(() => {
+        clearTimeout(timeoutId);
+        this.stopUpdating();
+      }, 100);
+    }
   };
 
   handleKeyDown = (event) => {
@@ -232,6 +334,14 @@ export class Editor {
     this.currentAction = [];
   };
 
+  finishMoving = () => {
+    const dx = this.cursorX - this.currentAction[1].startX;
+    const dy = this.cursorY - this.currentAction[1].startY;
+
+    this.updateViewport(undefined, dx, dy);
+    this.currentAction = [];
+  };
+
   selectElement = (i) => {
     this.activeElementI = i;
     this.currentAction = [ACTIONS.SelectedElement];
@@ -265,8 +375,10 @@ export class Editor {
   };
 
   startUpdating = () => {
-    this.shouldUpdate = true;
-    this.update();
+    if (!this.shouldUpdate) {
+      this.shouldUpdate = true;
+      this.update();
+    }
   };
 
   stopUpdating = () => {
@@ -286,14 +398,27 @@ export class Editor {
   };
 
   doUpdate = () => {
-    // console.log("do update", {
-    //   t: this,
-    //   elements: this.elements,
-    //   activeElementI: this.activeElementI,
-    //   currentAction: this.currentAction,
-    // });
+    console.log("do update", {
+      vpOX: this.viewportOffsetX,
+    });
 
-    this.canvas.prepareFrame();
+    let frameOffsetX = this.viewportOffsetX;
+    let frameOffsetY = this.viewportOffsetY;
+
+    if (this.currentAction[0] === ACTIONS.Moving) {
+      frameOffsetX -= this.cursorX - this.currentAction[1].startX;
+      frameOffsetY -= this.cursorY - this.currentAction[1].startY;
+    }
+
+    console.log({
+      zoom: this.zoom,
+      w: this.canvas.w,
+      frameOffsetX,
+      vpCenterX: this.viewportCenterX,
+      currentAction: this.currentAction,
+    });
+
+    this.canvas.prepareFrame(this.zoom, -frameOffsetX, -frameOffsetY);
 
     for (let i = 0; i < this.elements.length; i++) {
       if (i !== this.activeElementI) {

@@ -43,8 +43,18 @@ export class Canvas {
     this.cnv.addEventListener("mousemove", handlers.onMouseMove);
     this.cnv.addEventListener("mouseup", handlers.onMouseUp);
 
+    this.cnv.addEventListener("wheel", handlers.onWheel);
+
     this.cnv.addEventListener("click", handlers.onClick);
   };
+
+  get w() {
+    return W;
+  }
+
+  get h() {
+    return H;
+  }
 
   drawRect = (x, y, w, h, fillColor, strokeColor) => {
     if (fillColor) {
@@ -141,12 +151,34 @@ export class Canvas {
     this.ctx.lineTo(endX, endY);
     this.ctx.stroke();
     this.ctx.setLineDash([]);
+    this.ctx.lineWidth = 1;
   };
 
-  prepareFrame = () => {
+  prepareFrame = (zoom, x, y) => {
     this.ctx.reset();
 
     const dpi = window.devicePixelRatio;
-    this.ctx.scale(dpi, dpi);
+
+    this.ctx.scale(dpi * zoom, dpi * zoom);
+    this.ctx.translate(x, y);
+
+    // const drawDashedLine = (startX, startY, endX, endY) => {
+    //   this.ctx.beginPath();
+    //   this.ctx.strokeStyle = "#dddddd80";
+    //   // this.ctx.setLineDash([5, 5]);
+    //   this.ctx.lineWidth = 1;
+    //   this.ctx.moveTo(startX, startY);
+    //   this.ctx.lineTo(endX, endY);
+    //   this.ctx.stroke();
+    //   this.ctx.setLineDash([]);
+    // };
+
+    // for (let i = 0; i < H; i += 20) {
+    //   drawDashedLine(0, i, W, i);
+    // }
+
+    // for (let i = 0; i < W; i += 20) {
+    //   drawDashedLine(i, 0, i, H);
+    // }
   };
 }
