@@ -6,7 +6,12 @@ import {
   getElementBoxPosition,
   setDocumentCursor,
 } from "./utils.js";
-import { calculateResizedElementPosition, getOuterBox } from "./geometry.js";
+import {
+  calculateResizedElementPosition,
+  expandBox,
+  getInnerBox,
+  transformBox,
+} from "./geometry.js";
 import { ELEMENT_BOX_POSITION, OUTER_BOX_OFFSET } from "./consts.js";
 
 const ACTIONS = {
@@ -123,6 +128,12 @@ export class Editor {
     this.viewportOffsetX = newOffsetX;
     this.viewportOffsetY = newOffsetY;
   };
+
+  getGlobalX = (x) =>
+    ((x - this.viewportOffsetX) * this.canvas.w) / (this.canvas.w / this.zoom);
+  getGlobalY = (y) =>
+    ((y - this.viewportOffsetY) * this.canvas.h) / (this.canvas.h / this.zoom);
+  getGlobalPosition = (x, y) => [this.getGlobalX(x), this.getGlobalY(y)];
 
   handleZoomInClick = () => {
     this.updateViewport(this.zoom * 2);
@@ -442,12 +453,12 @@ export class Editor {
     if (this.currentAction[0] === ACTIONS.SelectedElement) {
       this.canvas.drawElement(activeElement);
 
-      this.canvas.drawSelectionBox(
-        activeElement.outerBox.x1,
-        activeElement.outerBox.y1,
-        activeElement.outerBox.x2 - activeElement.outerBox.x1,
-        activeElement.outerBox.y2 - activeElement.outerBox.y1
-      );
+      this.canvas.restoreTransform();
+
+      const innerBox = activeElement.innerBox;
+      const transformedBox = transformBox(innerBox, this.getGlobalPosition);
+
+      this.canvas.drawSelectionBox(expandBox(transformedBox, OUTER_BOX_OFFSET));
     }
 
     if (this.currentAction[0] === ACTIONS.Resizing) {
@@ -464,21 +475,18 @@ export class Editor {
 
       this.canvas.drawElement(activeElement, x, y, scaleX, scaleY);
 
-      const outerBox = getOuterBox(
+      this.canvas.restoreTransform();
+
+      const innerBox = getInnerBox(
         x,
         y,
         activeElement.localBox,
         scaleX,
-        scaleY,
-        OUTER_BOX_OFFSET
+        scaleY
       );
+      const transformedBox = transformBox(innerBox, this.getGlobalPosition);
 
-      this.canvas.drawSelectionBox(
-        outerBox.x1,
-        outerBox.y1,
-        outerBox.x2 - outerBox.x1,
-        outerBox.y2 - outerBox.y1
-      );
+      this.canvas.drawSelectionBox(expandBox(transformedBox, OUTER_BOX_OFFSET));
     }
   };
 }
@@ -486,5 +494,7 @@ export class Editor {
 /**
  *
  * TODO:
+ *   - Remove outer box from text and from everywhere?
+ *   - Fix the bug with resizing being possible outside of a control point (because of zoom)
  *
  */

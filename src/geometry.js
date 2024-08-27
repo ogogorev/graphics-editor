@@ -72,6 +72,7 @@ export const calculateResizedElementPosition = (
   return [x, y, element.scaleX * scaleX, element.scaleY * scaleY];
 };
 
+// TODO: Should be renamed. Should be clear that it translates and scales
 export const getInnerBox = (x, y, localBox, scaleX, scaleY) => {
   return {
     x1: x + localBox.x1 * scaleX,
@@ -89,5 +90,25 @@ export const getOuterBox = (x, y, localBox, scaleX, scaleY, offset) => {
     y1: innerBox.y1 - offset,
     x2: innerBox.x2 + offset,
     y2: innerBox.y2 + offset,
+  };
+};
+
+export const expandBox = (box, offset) => {
+  return {
+    x1: box.x1 - offset,
+    y1: box.y1 - offset,
+    x2: box.x2 + offset,
+    y2: box.y2 + offset,
+  };
+};
+
+export const transformBox = (box, transformPositionFn) => {
+  const transformed1 = transformPositionFn(box.x1, box.y1);
+  const transformed2 = transformPositionFn(box.x2, box.y2);
+  return {
+    x1: transformed1[0],
+    y1: transformed1[1],
+    x2: transformed2[0],
+    y2: transformed2[1],
   };
 };

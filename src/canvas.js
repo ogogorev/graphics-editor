@@ -72,25 +72,24 @@ export class Canvas {
     font.draw(this.ctx, label, x, y);
   };
 
-  drawSelectionBox = (x, y, w, h) => {
-    // TODO: Use x, y, w, h directly
-    const boxX = x;
-    const boxY = y;
-    const boxW = w;
-    const boxH = h;
+  drawSelectionBox = (box) => {
+    const x = box.x1;
+    const y = box.y1;
+    const w = box.x2 - box.x1;
+    const h = box.y2 - box.y1;
 
     this.drawRect(
-      boxX + SELECTION_BOX_OFFSET,
-      boxY + SELECTION_BOX_OFFSET,
-      boxW - SELECTION_BOX_OFFSET * 2,
-      boxH - SELECTION_BOX_OFFSET * 2,
+      x + SELECTION_BOX_OFFSET,
+      y + SELECTION_BOX_OFFSET,
+      w - SELECTION_BOX_OFFSET * 2,
+      h - SELECTION_BOX_OFFSET * 2,
       undefined,
       SELECTION_COLOR
     );
 
     this.drawRect(
-      boxX,
-      boxY,
+      x,
+      y,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       "white",
@@ -98,8 +97,8 @@ export class Canvas {
     );
 
     this.drawRect(
-      boxX + boxW - SELECTION_BOX_CONTROL_POINT_SIZE,
-      boxY,
+      x + w - SELECTION_BOX_CONTROL_POINT_SIZE,
+      y,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       "white",
@@ -107,8 +106,8 @@ export class Canvas {
     );
 
     this.drawRect(
-      boxX,
-      boxY + boxH - SELECTION_BOX_CONTROL_POINT_SIZE,
+      x,
+      y + h - SELECTION_BOX_CONTROL_POINT_SIZE,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       "white",
@@ -116,8 +115,8 @@ export class Canvas {
     );
 
     this.drawRect(
-      boxX + boxW - SELECTION_BOX_CONTROL_POINT_SIZE,
-      boxY + boxH - SELECTION_BOX_CONTROL_POINT_SIZE,
+      x + w - SELECTION_BOX_CONTROL_POINT_SIZE,
+      y + h - SELECTION_BOX_CONTROL_POINT_SIZE,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       SELECTION_BOX_CONTROL_POINT_SIZE,
       "white",
@@ -154,12 +153,19 @@ export class Canvas {
     this.ctx.lineWidth = 1;
   };
 
+  restoreTransform = () => {
+    this.ctx.restore();
+  };
+
   prepareFrame = (zoom, x, y) => {
     this.ctx.reset();
 
     const dpi = window.devicePixelRatio;
 
-    this.ctx.scale(dpi * zoom, dpi * zoom);
+    this.ctx.scale(dpi, dpi);
+    this.ctx.save();
+
+    this.ctx.scale(zoom, zoom);
     this.ctx.translate(x, y);
 
     // const drawDashedLine = (startX, startY, endX, endY) => {
