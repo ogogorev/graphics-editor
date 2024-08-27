@@ -10,6 +10,7 @@ import {
   calculateResizedElementPosition,
   expandBox,
   getInnerBox,
+  isPointInBox,
   transformBox,
 } from "./geometry.js";
 import { ELEMENT_BOX_POSITION, OUTER_BOX_OFFSET } from "./consts.js";
@@ -129,11 +130,26 @@ export class Editor {
     this.viewportOffsetY = newOffsetY;
   };
 
-  getGlobalX = (x) =>
+  getPhysicalX = (x) =>
     ((x - this.viewportOffsetX) * this.canvas.w) / (this.canvas.w / this.zoom);
-  getGlobalY = (y) =>
+
+  getPhysicalY = (y) =>
     ((y - this.viewportOffsetY) * this.canvas.h) / (this.canvas.h / this.zoom);
-  getGlobalPosition = (x, y) => [this.getGlobalX(x), this.getGlobalY(y)];
+
+  getPhysicalPosition = (x, y) => [this.getPhysicalX(x), this.getPhysicalY(y)];
+
+  getLogicalPosition = (x, y) => {
+    return [
+      this.viewportOffsetX + x / this.zoom,
+      this.viewportOffsetY + y / this.zoom,
+    ];
+  };
+
+  setCursorPosition = (x, y) => {
+    const canvasPosition = this.getLogicalPosition(x, y);
+    this.cursorX = canvasPosition[0] || undefined;
+    this.cursorY = canvasPosition[1] || undefined;
+  };
 
   handleZoomInClick = () => {
     this.updateViewport(this.zoom * 2);
@@ -143,19 +159,6 @@ export class Editor {
   handleZoomOutClick = () => {
     this.updateViewport(this.zoom / 2);
     this.update();
-  };
-
-  getCanvasPosition = (x, y) => {
-    return [
-      this.viewportOffsetX + x / this.zoom,
-      this.viewportOffsetY + y / this.zoom,
-    ];
-  };
-
-  setCursorPosition = (x, y) => {
-    const canvasPosition = this.getCanvasPosition(x, y);
-    this.cursorX = canvasPosition[0] || undefined;
-    this.cursorY = canvasPosition[1] || undefined;
   };
 
   handleMouseDown = (event) => {
@@ -194,7 +197,7 @@ export class Editor {
       this.setCursorPosition(event.offsetX, event.offsetY);
     }
 
-    this.updateCursor(...this.getCanvasPosition(event.offsetX, event.offsetY));
+    this.updateCursor(...this.getLogicalPosition(event.offsetX, event.offsetY));
   };
 
   handleMouseUp = (event) => {
@@ -269,16 +272,12 @@ export class Editor {
 
   checkColisionsAtXY = (x, y) => {
     for (let i = 0; i < this.elements.length; i++) {
-      const outerBox = this.elements[i].outerBox;
+      const outerBox = expandBox(
+        this.elements[i].innerBox,
+        OUTER_BOX_OFFSET / this.zoom
+      );
 
-      if (
-        x > outerBox.x1 &&
-        y > outerBox.y1 &&
-        x < outerBox.x2 &&
-        y < outerBox.y2
-      ) {
-        return i;
-      }
+      if (isPointInBox(x, y, outerBox)) return i;
     }
 
     return -1;
@@ -455,10 +454,12 @@ export class Editor {
 
       this.canvas.restoreTransform();
 
-      const innerBox = activeElement.innerBox;
-      const transformedBox = transformBox(innerBox, this.getGlobalPosition);
-
-      this.canvas.drawSelectionBox(expandBox(transformedBox, OUTER_BOX_OFFSET));
+      const transformedBox = transformBox(
+        activeElement.innerBox,
+        this.getPhysicalPosition
+      );
+      const selectionBox = expandBox(transformedBox, OUTER_BOX_OFFSET);
+      this.canvas.drawSelectionBox(selectionBox);
     }
 
     if (this.currentAction[0] === ACTIONS.Resizing) {
@@ -484,9 +485,9 @@ export class Editor {
         scaleX,
         scaleY
       );
-      const transformedBox = transformBox(innerBox, this.getGlobalPosition);
-
-      this.canvas.drawSelectionBox(expandBox(transformedBox, OUTER_BOX_OFFSET));
+      const transformedBox = transformBox(innerBox, this.getPhysicalPosition);
+      const selectionBox = expandBox(transformedBox, OUTER_BOX_OFFSET);
+      this.canvas.drawSelectionBox(selectionBox);
     }
   };
 }
@@ -494,7 +495,5 @@ export class Editor {
 /**
  *
  * TODO:
- *   - Remove outer box from text and from everywhere?
- *   - Fix the bug with resizing being possible outside of a control point (because of zoom)
  *
  */

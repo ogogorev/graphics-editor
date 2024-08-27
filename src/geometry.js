@@ -82,17 +82,6 @@ export const getInnerBox = (x, y, localBox, scaleX, scaleY) => {
   };
 };
 
-export const getOuterBox = (x, y, localBox, scaleX, scaleY, offset) => {
-  const innerBox = getInnerBox(x, y, localBox, scaleX, scaleY);
-
-  return {
-    x1: innerBox.x1 - offset,
-    y1: innerBox.y1 - offset,
-    x2: innerBox.x2 + offset,
-    y2: innerBox.y2 + offset,
-  };
-};
-
 export const expandBox = (box, offset) => {
   return {
     x1: box.x1 - offset,
@@ -111,4 +100,8 @@ export const transformBox = (box, transformPositionFn) => {
     x2: transformed2[0],
     y2: transformed2[1],
   };
+};
+
+export const isPointInBox = (x, y, box) => {
+  return x > box.x1 && y > box.y1 && x < box.x2 && y < box.y2;
 };

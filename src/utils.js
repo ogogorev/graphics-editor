@@ -1,5 +1,7 @@
 import { ELEMENT_BOX_POSITION } from "./consts.js";
 
+// TODO: This file should be somehow merged with geomerty.js
+
 // TODO: I should return a vector here
 export const getElementBoxPosition = (x, y, innerBox) => {
   if (

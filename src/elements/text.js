@@ -1,6 +1,5 @@
-import { OUTER_BOX_OFFSET } from "../consts.js";
 import { FONTS, loadedFonts } from "../fonts.js";
-import { getInnerBox, getOuterBox } from "../geometry.js";
+import { getInnerBox } from "../geometry.js";
 
 export class Text {
   type = "text";
@@ -65,16 +64,5 @@ export class Text {
 
   get innerBox() {
     return getInnerBox(this.x, this.y, this.localBox, this.scaleX, this.scaleY);
-  }
-
-  get outerBox() {
-    return getOuterBox(
-      this.x,
-      this.y,
-      this.localBox,
-      this.scaleX,
-      this.scaleY,
-      OUTER_BOX_OFFSET
-    );
   }
 }
