@@ -19,7 +19,7 @@ const ACTIONS = {
   Dragging: "Dragging",
   SelectedElement: "Selected",
   Resizing: "Resizing",
-  Moving: "Moving",
+  MovingCanvas: "MovingCanvas",
 };
 
 const MIN_ZOOM = 0.25;
@@ -41,8 +41,8 @@ const createResizingAction = (x, y, direction) => {
 };
 
 // TODO: Move away
-const createMovingAction = (x, y) => {
-  return [ACTIONS.Moving, { startX: x, startY: y }];
+const createMovingCanvasAction = (x, y) => {
+  return [ACTIONS.MovingCanvas, { startX: x, startY: y }];
 };
 
 export class Editor {
@@ -186,7 +186,9 @@ export class Editor {
       }
     } else {
       this.activeElementI = -1;
-      this.setCurrentAction(createMovingAction(this.cursorX, this.cursorY));
+      this.setCurrentAction(
+        createMovingCanvasAction(this.cursorX, this.cursorY)
+      );
     }
 
     this.startUpdating();
@@ -219,8 +221,8 @@ export class Editor {
       this.selectElement(this.activeElementI);
     }
 
-    if (this.currentAction[0] === ACTIONS.Moving) {
-      this.finishMoving();
+    if (this.currentAction[0] === ACTIONS.MovingCanvas) {
+      this.finishMovingCanvas();
     }
 
     this.setCursorPosition();
@@ -291,6 +293,11 @@ export class Editor {
       return;
     }
 
+    if (this.currentAction[0] === ACTIONS.MovingCanvas) {
+      setDocumentCursor("all-scroll");
+      return;
+    }
+
     const elementI = this.checkColisionsAtXY(x, y);
 
     if (elementI < 0) {
@@ -344,7 +351,7 @@ export class Editor {
     this.currentAction = [];
   };
 
-  finishMoving = () => {
+  finishMovingCanvas = () => {
     const dx = this.cursorX - this.currentAction[1].startX;
     const dy = this.cursorY - this.currentAction[1].startY;
 
@@ -415,7 +422,7 @@ export class Editor {
     let frameOffsetX = this.viewportOffsetX;
     let frameOffsetY = this.viewportOffsetY;
 
-    if (this.currentAction[0] === ACTIONS.Moving) {
+    if (this.currentAction[0] === ACTIONS.MovingCanvas) {
       frameOffsetX -= this.cursorX - this.currentAction[1].startX;
       frameOffsetY -= this.cursorY - this.currentAction[1].startY;
     }
