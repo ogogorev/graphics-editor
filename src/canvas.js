@@ -36,6 +36,8 @@ export class Canvas {
     this.cnv.height = H * dpi;
 
     this.ctx = this.cnv.getContext("2d");
+
+    this.offscreenCanvas = new OffscreenCanvas(W * dpi, H * dpi);
   }
 
   addListeners = (handlers) => {
@@ -157,27 +159,51 @@ export class Canvas {
     this.ctx.restore();
   };
 
-  prepareFrame = (zoom, x, y) => {
-    this.ctx.reset();
+  prepareFrameOnCtx = (ctx, zoom, x, y) => {
+    ctx.reset();
 
     const dpi = window.devicePixelRatio;
 
-    this.ctx.scale(dpi, dpi);
+    ctx.scale(dpi, dpi);
+    ctx.save();
+
+    ctx.scale(zoom, zoom);
+    ctx.translate(x, y);
+  };
+
+  prepareFrame = (zoom, x, y) => {
+    this.prepareFrameOnCtx(this.ctx, zoom, x, y);
+  };
+
+  prepareStaticFrame = (zoom, x, y) => {
+    console.log("prepareStaticFrame", { zoom });
+
+    this.ctx = this.offscreenCanvas.getContext("2d");
+
+    const dpi = window.devicePixelRatio;
+
+    this.ctx.reset();
+    this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    this.ctx.scale(zoom, zoom);
+
+    // this.ctx.scale(dpi, dpi);
     this.ctx.save();
 
-    this.ctx.scale(zoom, zoom);
+    // this.ctx.scale(zoom, zoom);
     this.ctx.translate(x, y);
 
-    // const drawDashedLine = (startX, startY, endX, endY) => {
-    //   this.ctx.beginPath();
-    //   this.ctx.strokeStyle = "#dddddd80";
-    //   // this.ctx.setLineDash([5, 5]);
-    //   this.ctx.lineWidth = 1;
-    //   this.ctx.moveTo(startX, startY);
-    //   this.ctx.lineTo(endX, endY);
-    //   this.ctx.stroke();
-    //   this.ctx.setLineDash([]);
-    // };
+    // this.prepareFrameOnCtx(this.offscreenCanvas.getContext("2d"), zoom, x, y);
+
+    const drawDashedLine = (startX, startY, endX, endY) => {
+      this.ctx.beginPath();
+      this.ctx.strokeStyle = "#dddddd80";
+      // this.ctx.setLineDash([5, 5]);
+      this.ctx.lineWidth = 1;
+      this.ctx.moveTo(startX, startY);
+      this.ctx.lineTo(endX, endY);
+      this.ctx.stroke();
+      this.ctx.setLineDash([]);
+    };
 
     // for (let i = 0; i < H; i += 20) {
     //   drawDashedLine(0, i, W, i);
@@ -186,5 +212,30 @@ export class Canvas {
     // for (let i = 0; i < W; i += 20) {
     //   drawDashedLine(i, 0, i, H);
     // }
+  };
+
+  finishStaticFrame = () => {
+    this.ctx = this.cnv.getContext("2d");
+  };
+
+  drawStaticFrame = (zoom, x, y) => {
+    console.log("drawStaticFrame", { zoom, x, y });
+    this.ctx.drawImage(
+      this.offscreenCanvas,
+      // -x * window.devicePixelRatio,
+      // -y * window.devicePixelRatio,
+      // -x,
+      // -y,
+      0,
+      0,
+      // W * window.devicePixelRatio * zoom,
+      // H * window.devicePixelRatio * zoom,
+      W * window.devicePixelRatio,
+      H * window.devicePixelRatio,
+      -x,
+      -y,
+      W / zoom,
+      H / zoom
+    );
   };
 }
