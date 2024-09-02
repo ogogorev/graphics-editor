@@ -7,18 +7,6 @@ import {
 const W = window.innerWidth;
 const H = window.innerHeight;
 
-// TODO: Move to consts
-const RESIZE_DIRECTION = {
-  TopLeft: "TopLeft",
-  TopRight: "TopRight",
-  BottomLeft: "BottomLeft",
-  BottomRight: "BottomRight",
-  Top: "Top",
-  Bottom: "Bottom",
-  Left: "Left",
-  Right: "Right",
-};
-
 export class Canvas {
   constructor(canvasId) {
     console.log({ w: window.innerWidth, k: window.innerHeight });
@@ -36,6 +24,8 @@ export class Canvas {
     this.cnv.height = H * dpi;
 
     this.ctx = this.cnv.getContext("2d");
+
+    this.offscreenCanvas = new OffscreenCanvas(W * dpi, H * dpi);
   }
 
   addListeners = (handlers) => {
@@ -157,34 +147,42 @@ export class Canvas {
     this.ctx.restore();
   };
 
-  prepareFrame = (zoom, x, y) => {
-    this.ctx.reset();
+  prepareFrameOnCtx = (ctx, zoom, x, y) => {
+    ctx.reset();
 
     const dpi = window.devicePixelRatio;
 
-    this.ctx.scale(dpi, dpi);
-    this.ctx.save();
+    ctx.scale(dpi, dpi);
+    ctx.save();
 
-    this.ctx.scale(zoom, zoom);
-    this.ctx.translate(x, y);
+    ctx.scale(zoom, zoom);
+    ctx.translate(x, y);
+  };
 
-    // const drawDashedLine = (startX, startY, endX, endY) => {
-    //   this.ctx.beginPath();
-    //   this.ctx.strokeStyle = "#dddddd80";
-    //   // this.ctx.setLineDash([5, 5]);
-    //   this.ctx.lineWidth = 1;
-    //   this.ctx.moveTo(startX, startY);
-    //   this.ctx.lineTo(endX, endY);
-    //   this.ctx.stroke();
-    //   this.ctx.setLineDash([]);
-    // };
+  prepareFrame = (zoom, x, y) => {
+    this.prepareFrameOnCtx(this.ctx, zoom, x, y);
+  };
 
-    // for (let i = 0; i < H; i += 20) {
-    //   drawDashedLine(0, i, W, i);
-    // }
+  prepareStaticFrame = (zoom, x, y) => {
+    this.ctx = this.offscreenCanvas.getContext("2d");
+    this.prepareFrameOnCtx(this.offscreenCanvas.getContext("2d"), zoom, x, y);
+  };
 
-    // for (let i = 0; i < W; i += 20) {
-    //   drawDashedLine(i, 0, i, H);
-    // }
+  finishStaticFrame = () => {
+    this.ctx = this.cnv.getContext("2d");
+  };
+
+  drawStaticFrame = (zoom, x, y) => {
+    this.ctx.drawImage(
+      this.offscreenCanvas,
+      0,
+      0,
+      W * window.devicePixelRatio,
+      H * window.devicePixelRatio,
+      -x,
+      -y,
+      W / zoom,
+      H / zoom
+    );
   };
 }

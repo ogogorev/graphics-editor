@@ -60,6 +60,8 @@ export class Editor {
 
   shouldUpdate = false;
 
+  elementsHash = "";
+
   constructor(canvas) {
     this.elements = [];
     this.canvas = canvas;
@@ -81,6 +83,34 @@ export class Editor {
       onWheel: this.handleWheel,
       onKeyDown: this.handleKeyDown,
     });
+
+    // const alph = "qwertyuiopasdfghjklzxcvbnm";
+
+    // const randomInt = (a, b) => {
+    //   return a + Math.floor(Math.random() * b);
+    // };
+
+    // const randomChar = () => {
+    //   return alph[randomInt(0, alph.length)];
+    // };
+
+    // for (let i = 0; i < 500; i++) {
+    //   const label = Array(randomInt(5, 10)).fill(null).map(randomChar);
+    //   const x = randomInt(0, this.canvas.w);
+    //   const y = randomInt(0, this.canvas.h);
+
+    //   const text = new Text(label, x, y);
+
+    //   this.elements.push(text);
+    // }
+
+    const label = "Random";
+    const x = 800;
+    const y = 200;
+
+    const text = new Text(label, x, y);
+
+    this.elements.push(text);
 
     // Initial elements
     this.addText();
@@ -382,8 +412,8 @@ export class Editor {
     input.removeEventListener("keydown", this.handleKeyDown);
   };
 
-  addText = () => {
-    const text = new Text("Text", 400, 100);
+  addText = (label = "Text", x = 400, y = 100) => {
+    const text = new Text(label, x, y);
     this.elements.push(text);
 
     this.selectElement(this.elements.length - 1);
@@ -415,10 +445,6 @@ export class Editor {
   };
 
   doUpdate = () => {
-    console.log("do update", {
-      vpOX: this.viewportOffsetX,
-    });
-
     let frameOffsetX = this.viewportOffsetX;
     let frameOffsetY = this.viewportOffsetY;
 
@@ -427,21 +453,32 @@ export class Editor {
       frameOffsetY -= this.cursorY - this.currentAction[1].startY;
     }
 
-    console.log({
-      zoom: this.zoom,
-      w: this.canvas.w,
-      frameOffsetX,
-      vpCenterX: this.viewportCenterX,
-      currentAction: this.currentAction,
-    });
-
     this.canvas.prepareFrame(this.zoom, -frameOffsetX, -frameOffsetY);
 
-    for (let i = 0; i < this.elements.length; i++) {
-      if (i !== this.activeElementI) {
-        this.canvas.drawElement(this.elements[i]);
+    const staticElements = this.elements.filter(
+      (_, i) => i !== this.activeElementI
+    );
+
+    const nextElementsHash = getRenderingHash(
+      staticElements,
+      this.zoom,
+      -frameOffsetX,
+      -frameOffsetY
+    );
+
+    if (nextElementsHash !== this.elementsHash) {
+      this.elementsHash = nextElementsHash;
+
+      this.canvas.prepareStaticFrame(this.zoom, -frameOffsetX, -frameOffsetY);
+
+      for (let i = 0; i < staticElements.length; i++) {
+        this.canvas.drawElement(staticElements[i]);
       }
+
+      this.canvas.finishStaticFrame();
     }
+
+    this.canvas.drawStaticFrame(this.zoom, -frameOffsetX, -frameOffsetY);
 
     if (this.activeElementI < 0) {
       return;
@@ -498,6 +535,33 @@ export class Editor {
     }
   };
 }
+
+const getRenderingHash = (elements, zoom, x, y) => {
+  let str = zoom + x + y;
+
+  for (let i = 0; i < elements.length; i++) {
+    str += getRenderingHashForElement(elements[i]);
+  }
+
+  return str;
+};
+
+const getRenderingHashForElement = (element) => {
+  if (element.type === "text") {
+    return [
+      element.x,
+      element.y,
+      element.scaleX,
+      element.scaleY,
+      element.localBox.x1,
+      element.localBox.y1,
+      element.localBox.x2,
+      element.localBox.y2,
+    ].join("");
+  }
+
+  return "";
+};
 
 /**
  *

@@ -5,10 +5,20 @@ export const FONTS = {
     // "url('https://fonts.googleapis.com/css2?family=Sankofa+Display&display=swap')"
     // "url(https://fonts.gstatic.com/s/sankofadisplay/v2/Ktk1ALSRd4LucUDghJ2rTqXOoh3HEKOYd4xI5g.woff2) format('woff2')"
     url: "https://fonts.gstatic.com/s/sankofadisplay/v2/Ktk1ALSRd4LucUDghJ2rTqXOoh3HEKOYd4xI5g.woff2",
+    // url: "/fonts/Roboto-Regular.ttf",
   },
 };
 
 export const loadedFonts = {};
+
+// export async function loadFont(fontInfo) {
+//   const res = await fetch(fontInfo.url);
+//   const fontBuffer = res.arrayBuffer();
+
+//   const font = opentype.parse(await fontBuffer);
+
+//   loadedFonts[fontInfo.id] = font;
+// }
 
 export async function loadFont(fontInfo) {
   const res = await fetch(fontInfo.url);

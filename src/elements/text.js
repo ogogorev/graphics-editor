@@ -17,7 +17,7 @@ export class Text {
   localBox;
 
   constructor(label, x, y) {
-    this.label = "Text";
+    this.label = label;
     this.x = x;
     this.y = y;
 
