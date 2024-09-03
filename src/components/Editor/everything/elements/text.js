@@ -1,5 +1,5 @@
-import { FONTS, loadedFonts } from "../../src/Editor/fonts.js";
-import { getInnerBox } from "../../src/Editor/utils.js";
+import { FONTS, loadedFonts } from "../fonts";
+import { getInnerBox } from "../utils";
 
 export class Text {
   type = "text";
