@@ -1,13 +1,12 @@
 import { useEffect, useRef } from "react";
 
-import { Canvas } from "../everything/canvas";
-import { Editor } from "../everything/editor";
+import { Canvas } from "./everything/canvas";
+import { Editor } from "./everything/editor";
+import { Controls } from "./Controls/Controls";
 
-export const EditorWrapper = () => {
-  return <EditorC />;
-};
+import "./Editor.css";
 
-export const EditorC = () => {
+export const EditorContainer = () => {
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -27,6 +26,8 @@ export const EditorC = () => {
 
   return (
     <div>
+      <Controls />
+
       <canvas id="canvas"></canvas>
       <input id="edit-text" />
     </div>

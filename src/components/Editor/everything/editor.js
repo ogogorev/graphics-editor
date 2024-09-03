@@ -73,11 +73,11 @@ export class Editor {
     }
     console.log("init");
 
-    // intializeControls({
-    //   onAddText: this.addText,
-    //   onZoomIn: this.handleZoomInClick,
-    //   onZoomOut: this.handleZoomOutClick,
-    // });
+    intializeControls({
+      onAddText: () => { this.addText() },
+      onZoomIn: this.handleZoomInClick,
+      onZoomOut: this.handleZoomOutClick,
+    });
 
     this.canvas.addListeners({
       onMouseDown: this.handleMouseDown,

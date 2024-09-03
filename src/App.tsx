@@ -1,9 +1,9 @@
-import { EditorWrapper } from "./components/Editor/EditorWrapper/EditorWrapper";
+import { EditorContainer } from "./components/Editor/Editor";
 
 function App() {
   return (
     <>
-      <EditorWrapper />
+      <EditorContainer />
     </>
   );
 }
