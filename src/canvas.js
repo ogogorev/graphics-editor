@@ -7,18 +7,6 @@ import {
 const W = window.innerWidth;
 const H = window.innerHeight;
 
-// TODO: Move to consts
-const RESIZE_DIRECTION = {
-  TopLeft: "TopLeft",
-  TopRight: "TopRight",
-  BottomLeft: "BottomLeft",
-  BottomRight: "BottomRight",
-  Top: "Top",
-  Bottom: "Bottom",
-  Left: "Left",
-  Right: "Right",
-};
-
 export class Canvas {
   constructor(canvasId) {
     console.log({ w: window.innerWidth, k: window.innerHeight });
@@ -176,42 +164,8 @@ export class Canvas {
   };
 
   prepareStaticFrame = (zoom, x, y) => {
-    console.log("prepareStaticFrame", { zoom });
-
     this.ctx = this.offscreenCanvas.getContext("2d");
-
-    const dpi = window.devicePixelRatio;
-
-    this.ctx.reset();
-    this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    this.ctx.scale(zoom, zoom);
-
-    // this.ctx.scale(dpi, dpi);
-    this.ctx.save();
-
-    // this.ctx.scale(zoom, zoom);
-    this.ctx.translate(x, y);
-
-    // this.prepareFrameOnCtx(this.offscreenCanvas.getContext("2d"), zoom, x, y);
-
-    const drawDashedLine = (startX, startY, endX, endY) => {
-      this.ctx.beginPath();
-      this.ctx.strokeStyle = "#dddddd80";
-      // this.ctx.setLineDash([5, 5]);
-      this.ctx.lineWidth = 1;
-      this.ctx.moveTo(startX, startY);
-      this.ctx.lineTo(endX, endY);
-      this.ctx.stroke();
-      this.ctx.setLineDash([]);
-    };
-
-    // for (let i = 0; i < H; i += 20) {
-    //   drawDashedLine(0, i, W, i);
-    // }
-
-    // for (let i = 0; i < W; i += 20) {
-    //   drawDashedLine(i, 0, i, H);
-    // }
+    this.prepareFrameOnCtx(this.offscreenCanvas.getContext("2d"), zoom, x, y);
   };
 
   finishStaticFrame = () => {
@@ -219,17 +173,10 @@ export class Canvas {
   };
 
   drawStaticFrame = (zoom, x, y) => {
-    console.log("drawStaticFrame", { zoom, x, y });
     this.ctx.drawImage(
       this.offscreenCanvas,
-      // -x * window.devicePixelRatio,
-      // -y * window.devicePixelRatio,
-      // -x,
-      // -y,
       0,
       0,
-      // W * window.devicePixelRatio * zoom,
-      // H * window.devicePixelRatio * zoom,
       W * window.devicePixelRatio,
       H * window.devicePixelRatio,
       -x,

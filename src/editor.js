@@ -84,17 +84,17 @@ export class Editor {
       onKeyDown: this.handleKeyDown,
     });
 
-    const alph = "qwertyuiopasdfghjklzxcvbnm";
+    // const alph = "qwertyuiopasdfghjklzxcvbnm";
 
-    const randomInt = (a, b) => {
-      return a + Math.floor(Math.random() * b);
-    };
+    // const randomInt = (a, b) => {
+    //   return a + Math.floor(Math.random() * b);
+    // };
 
-    const randomChar = () => {
-      return alph[randomInt(0, alph.length)];
-    };
+    // const randomChar = () => {
+    //   return alph[randomInt(0, alph.length)];
+    // };
 
-    // for (let i = 0; i < 10; i++) {
+    // for (let i = 0; i < 500; i++) {
     //   const label = Array(randomInt(5, 10)).fill(null).map(randomChar);
     //   const x = randomInt(0, this.canvas.w);
     //   const y = randomInt(0, this.canvas.h);
@@ -445,10 +445,6 @@ export class Editor {
   };
 
   doUpdate = () => {
-    console.log("do update", {
-      vpOX: this.viewportOffsetX,
-    });
-
     let frameOffsetX = this.viewportOffsetX;
     let frameOffsetY = this.viewportOffsetY;
 
@@ -457,44 +453,32 @@ export class Editor {
       frameOffsetY -= this.cursorY - this.currentAction[1].startY;
     }
 
-    console.log({
-      zoom: this.zoom,
-      w: this.canvas.w,
-      frameOffsetX,
-      vpCenterX: this.viewportCenterX,
-      currentAction: this.currentAction,
-    });
-
     this.canvas.prepareFrame(this.zoom, -frameOffsetX, -frameOffsetY);
 
-    const elements = this.elements.filter((_, i) => i !== this.activeElementI);
+    const staticElements = this.elements.filter(
+      (_, i) => i !== this.activeElementI
+    );
 
     const nextElementsHash = getRenderingHash(
-      elements,
+      staticElements,
       this.zoom,
       -frameOffsetX,
       -frameOffsetY
     );
 
-    console.log("before", { nextElementsHash, curr: this.elementsHash });
-
     if (nextElementsHash !== this.elementsHash) {
-      console.log("draw static");
       this.elementsHash = nextElementsHash;
 
       this.canvas.prepareStaticFrame(this.zoom, -frameOffsetX, -frameOffsetY);
 
-      for (let i = 0; i < elements.length; i++) {
-        this.canvas.drawElement(elements[i]);
+      for (let i = 0; i < staticElements.length; i++) {
+        this.canvas.drawElement(staticElements[i]);
       }
 
       this.canvas.finishStaticFrame();
     }
-    this.canvas.drawStaticFrame(this.zoom, -frameOffsetX, -frameOffsetY);
 
-    // for (let i = 0; i < elements.length; i++) {
-    //   this.canvas.drawElement(elements[i]);
-    // }
+    this.canvas.drawStaticFrame(this.zoom, -frameOffsetX, -frameOffsetY);
 
     if (this.activeElementI < 0) {
       return;
@@ -554,7 +538,6 @@ export class Editor {
 
 const getRenderingHash = (elements, zoom, x, y) => {
   let str = zoom + x + y;
-  // let str = zoom;
 
   for (let i = 0; i < elements.length; i++) {
     str += getRenderingHashForElement(elements[i]);
