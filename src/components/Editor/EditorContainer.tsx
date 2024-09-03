@@ -31,6 +31,7 @@ export const EditorContainer = () => {
       <Controls />
 
       <canvas id="canvas"></canvas>
+
       <input id="edit-text" />
     </div>
   );
