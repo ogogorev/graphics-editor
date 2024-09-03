@@ -5,6 +5,7 @@ import { Canvas } from "./canvas";
 // @ts-expect-error missing declaration
 import { Editor } from "./editor";
 import { Controls } from "./Controls/Controls";
+//
 
 import "./EditorContainer.css";
 
