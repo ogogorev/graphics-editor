@@ -1,4 +1,4 @@
-import { EditorContainer } from "./components/Editor/Editor";
+import { EditorContainer } from "./components/Editor/EditorContainer";
 
 function App() {
   return (

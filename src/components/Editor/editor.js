@@ -1,6 +1,6 @@
-import { Text } from "../src/Editor/elements/text.js";
-import { loadFonts } from "./fonts.js";
-import { intializeControls } from "../src/Editor/controls.js";
+import { Text } from "./elements/Text.js";
+import { loadFonts } from "./fonts";
+import { intializeControls } from "./controls";
 import {
   getCursorForElementBoxPosition,
   getElementBoxPosition,
@@ -11,10 +11,7 @@ import {
   isPointInBox,
   transformBox,
 } from "./utils.js";
-import {
-  ELEMENT_BOX_POSITION,
-  OUTER_BOX_OFFSET,
-} from "../src/Editor/consts.js";
+import { ELEMENT_BOX_POSITION, OUTER_BOX_OFFSET } from "./consts.js";
 
 const ACTIONS = {
   Dragging: "Dragging",
@@ -69,10 +66,17 @@ export class Editor {
   }
 
   init = async () => {
-    await loadFonts();
+    try {
+      await loadFonts();
+    } catch (error) {
+      console.error("Failed to load fonts", error);
+    }
+    console.log("init");
 
     intializeControls({
-      onAddText: this.addText,
+      onAddText: () => {
+        this.addText();
+      },
       onZoomIn: this.handleZoomInClick,
       onZoomOut: this.handleZoomOutClick,
     });
@@ -446,6 +450,8 @@ export class Editor {
   };
 
   doUpdate = () => {
+    console.log("do update");
+
     let frameOffsetX = this.viewportOffsetX;
     let frameOffsetY = this.viewportOffsetY;
 

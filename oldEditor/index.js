@@ -1,5 +1,5 @@
-import { Canvas } from "./canvas.js";
-import { Editor } from "./editor.js";
+import { Canvas } from "../src/components/Editor/canvas.js";
+import { Editor } from "../src/components/Editor/editor.js";
 
 async function main() {
   const canvas = new Canvas("canvas");

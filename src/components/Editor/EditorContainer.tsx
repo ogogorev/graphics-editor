@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 
-import { Canvas } from "./everything/canvas";
-import { Editor } from "./everything/editor";
+import { Canvas } from "./canvas";
+import { Editor } from "./editor";
 import { Controls } from "./Controls/Controls";
 
-import "./Editor.css";
+import "./EditorContainer.css";
 
 export const EditorContainer = () => {
   const initialized = useRef(false);
