@@ -30,6 +30,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -48,4 +52,5 @@ jobs:
           path: './dist'
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        # uses: actions/deploy-pages@v4
+        uses: peaceiris/actions-gh-pages@v3
