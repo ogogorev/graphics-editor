@@ -1,4 +1,4 @@
-import { Text } from "./elements/Text.js";
+import { Text } from "./elements/Text";
 import { loadFonts } from "./fonts";
 import { intializeControls } from "./controls";
 import {
@@ -10,9 +10,11 @@ import {
   getInnerBox,
   isPointInBox,
   transformBox,
-} from "./utils.js";
+} from "./utils";
 import { ElementBoxPosition, OUTER_BOX_OFFSET } from "./consts";
+import { ElementType } from "./types";
 
+// TODO: Convert to enum
 const ACTIONS = {
   Dragging: "Dragging",
   SelectedElement: "Selected",
@@ -20,6 +22,7 @@ const ACTIONS = {
   MovingCanvas: "MovingCanvas",
 };
 
+// TODO: Move to consts
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 8;
 
@@ -88,26 +91,6 @@ export class Editor {
       onWheel: this.handleWheel,
       onKeyDown: this.handleKeyDown,
     });
-
-    // const alph = "qwertyuiopasdfghjklzxcvbnm";
-
-    // const randomInt = (a, b) => {
-    //   return a + Math.floor(Math.random() * b);
-    // };
-
-    // const randomChar = () => {
-    //   return alph[randomInt(0, alph.length)];
-    // };
-
-    // for (let i = 0; i < 500; i++) {
-    //   const label = Array(randomInt(5, 10)).fill(null).map(randomChar);
-    //   const x = randomInt(0, this.canvas.w);
-    //   const y = randomInt(0, this.canvas.h);
-
-    //   const text = new Text(label, x, y);
-
-    //   this.elements.push(text);
-    // }
 
     const label = "Random";
     const x = 800;
@@ -398,7 +381,7 @@ export class Editor {
     this.activeElementI = i;
     this.currentAction = [ACTIONS.SelectedElement];
 
-    if (this.getActiveElement().type === "text") {
+    if (this.getActiveElement().type === ElementType.Text) {
       const input = document.getElementById("edit-text");
       input.addEventListener("keydown", this.handleKeyDown);
 
@@ -554,7 +537,7 @@ const getRenderingHash = (elements, zoom, x, y) => {
 };
 
 const getRenderingHashForElement = (element) => {
-  if (element.type === "text") {
+  if (element.type === ElementType.Text) {
     return [
       element.x,
       element.y,
