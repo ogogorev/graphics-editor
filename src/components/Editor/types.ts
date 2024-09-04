@@ -1,4 +1,27 @@
+import { ElementBoxPosition } from "./consts";
+
 export type Position = [number, number];
+
+export enum EditorActionType {
+  Dragging = "Dragging",
+  SelectedElement = "Selected",
+  Resizing = "Resizing",
+  MovingCanvas = "MovingCanvas",
+}
+
+// TODO: Rename x, y to startX, startY
+export type DraggingAction = [EditorActionType, { x: number; y: number }];
+// TODO: Rename x, y to startX, startY
+export type ResizingAction = [
+  EditorActionType.Resizing,
+  { x: number; y: number; direction: ElementBoxPosition }
+];
+export type MovingCanvasAction = [
+  EditorActionType.MovingCanvas,
+  { startX: number; startY: number }
+];
+
+export type EditorAction = DraggingAction | ResizingAction | MovingCanvasAction;
 
 export type Box = {
   x1: number;

@@ -112,7 +112,11 @@ export const isPointInBox = (x: number, y: number, box: Box) => {
 };
 
 // TODO: I should return a vector here
-export const getElementBoxPosition = (x: number, y: number, innerBox: Box) => {
+export const getElementBoxPosition = (
+  x: number,
+  y: number,
+  innerBox: Box
+): ElementBoxPosition => {
   if (
     x > innerBox.x1 &&
     x < innerBox.x2 &&
@@ -153,6 +157,8 @@ export const getElementBoxPosition = (x: number, y: number, innerBox: Box) => {
   if (y >= innerBox.y2) {
     return ElementBoxPosition.Bottom;
   }
+
+  throw new Error("Cannot define element position")
 };
 
 export const getCursorForElementBoxPosition = (

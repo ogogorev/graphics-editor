@@ -39,15 +39,12 @@ export class Canvas {
     onMouseMove: (e: MouseEvent) => void;
     onMouseUp: (e: MouseEvent) => void;
     onWheel: (e: WheelEvent) => void;
-    onClick: (e: MouseEvent) => void;
   }) => {
     this.cnv.addEventListener("mousedown", handlers.onMouseDown);
     this.cnv.addEventListener("mousemove", handlers.onMouseMove);
     this.cnv.addEventListener("mouseup", handlers.onMouseUp);
 
     this.cnv.addEventListener("wheel", handlers.onWheel);
-
-    this.cnv.addEventListener("click", handlers.onClick);
   };
 
   get w() {

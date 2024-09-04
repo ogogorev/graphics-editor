@@ -12,43 +12,53 @@ import {
   transformBox,
 } from "./utils";
 import { ElementBoxPosition, OUTER_BOX_OFFSET } from "./consts";
-import { ElementType } from "./types";
-
-// TODO: Convert to enum
-const ACTIONS = {
-  Dragging: "Dragging",
-  SelectedElement: "Selected",
-  Resizing: "Resizing",
-  MovingCanvas: "MovingCanvas",
-};
+import { Canvas } from "./canvas";
+import {
+  DraggingAction,
+  EditorAction,
+  EditorActionType,
+  Element,
+  ElementType,
+  MovingCanvasAction,
+  ResizingAction,
+} from "./types";
 
 // TODO: Move to consts
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 8;
 
 // TODO: Move away
-const createDraggingAction = (x, y) => {
-  return [ACTIONS.Dragging, { x, y }];
+const createDraggingAction = (x: number, y: number): DraggingAction => {
+  return [EditorActionType.Dragging, { x, y }];
 };
 
 // TODO: Move away
-const createSelectedElementAction = () => {
-  return [ACTIONS.SelectedElement];
+// TODO: Unomment
+// const createSelectedElementAction = () => {
+//   return [ACTIONS.SelectedElement];
+// };
+
+// TODO: Move away
+const createResizingAction = (
+  x: number,
+  y: number,
+  direction: ElementBoxPosition
+): ResizingAction => {
+  return [EditorActionType.Resizing, { x, y, direction }];
 };
 
 // TODO: Move away
-const createResizingAction = (x, y, direction) => {
-  return [ACTIONS.Resizing, { x, y, direction }];
-};
-
-// TODO: Move away
-const createMovingCanvasAction = (x, y) => {
-  return [ACTIONS.MovingCanvas, { startX: x, startY: y }];
+const createMovingCanvasAction = (x: number, y: number): MovingCanvasAction => {
+  return [EditorActionType.MovingCanvas, { startX: x, startY: y }];
 };
 
 export class Editor {
-  currentAction = [];
+  canvas: Canvas;
+
+  elements: Element[];
   activeElementI = -1;
+
+  currentAction: EditorAction | [] = [];
 
   // TODO: define a var with mouse pos and in canvas position?
   cursorX;
@@ -63,7 +73,7 @@ export class Editor {
 
   elementsHash = "";
 
-  constructor(canvas) {
+  constructor(canvas: Canvas) {
     this.elements = [];
     this.canvas = canvas;
   }
@@ -74,7 +84,6 @@ export class Editor {
     } catch (error) {
       console.error("Failed to load fonts", error);
     }
-    console.log("init");
 
     intializeControls({
       onAddText: () => {
@@ -89,7 +98,6 @@ export class Editor {
       onMouseMove: this.handleMouseMove,
       onMouseUp: this.handleMouseUp,
       onWheel: this.handleWheel,
-      onKeyDown: this.handleKeyDown,
     });
 
     const label = "Random";
@@ -112,7 +120,13 @@ export class Editor {
     this.currentAction = action;
   };
 
-  updateViewport = (zoom, dx, dy, focusX, focusY) => {
+  updateViewport = (
+    zoom: number,
+    dx?: number,
+    dy?: number,
+    focusX?: number,
+    focusY?: number
+  ) => {
     // Deliberately assuming that zoom is not provided in such a case
     if (dx != null && dy != null) {
       this.viewportOffsetX -= dx;
@@ -179,7 +193,7 @@ export class Editor {
     this.update();
   };
 
-  handleMouseDown = (event) => {
+  handleMouseDown = (event: MouseEvent) => {
     this.setCursorPosition(event.offsetX, event.offsetY);
 
     const elementI = this.checkColisionsAtXY(this.cursorX, this.cursorY);
@@ -197,7 +211,7 @@ export class Editor {
 
       if (position === ElementBoxPosition.InnerBox) {
         this.startDragging();
-      } else if (this.currentAction[0] === ACTIONS.SelectedElement) {
+      } else if (this.currentAction[0] === EditorActionType.SelectedElement) {
         this.setCurrentAction(
           createResizingAction(this.cursorX, this.cursorY, position)
         );
@@ -220,26 +234,26 @@ export class Editor {
     this.updateCursor(...this.getLogicalPosition(event.offsetX, event.offsetY));
   };
 
-  handleMouseUp = (event) => {
+  handleMouseUp = () => {
     this.stopUpdating();
 
     console.log("mouse up");
 
-    if (this.currentAction[0] === ACTIONS.SelectedElement) {
+    if (this.currentAction[0] === EditorActionType.SelectedElement) {
       this.deselectElement();
     }
 
-    if (this.currentAction[0] === ACTIONS.Dragging) {
+    if (this.currentAction[0] === EditorActionType.Dragging) {
       this.finishDragging();
       this.selectElement(this.activeElementI);
     }
 
-    if (this.currentAction[0] === ACTIONS.Resizing) {
+    if (this.currentAction[0] === EditorActionType.Resizing) {
       this.finishResizing();
       this.selectElement(this.activeElementI);
     }
 
-    if (this.currentAction[0] === ACTIONS.MovingCanvas) {
+    if (this.currentAction[0] === EditorActionType.MovingCanvas) {
       this.finishMovingCanvas();
     }
 
@@ -272,7 +286,7 @@ export class Editor {
   handleKeyDown = (event) => {
     console.log("key down", event);
 
-    if (this.currentAction[0] !== ACTIONS.SelectedElement) {
+    if (this.currentAction[0] !== EditorAction.SelectedElement) {
       return;
     }
 
@@ -305,13 +319,13 @@ export class Editor {
 
   updateCursor = (x, y) => {
     if (
-      this.currentAction[0] === ACTIONS.Dragging ||
-      this.currentAction[0] === ACTIONS.Resizing
+      this.currentAction[0] === EditorAction.Dragging ||
+      this.currentAction[0] === EditorAction.Resizing
     ) {
       return;
     }
 
-    if (this.currentAction[0] === ACTIONS.MovingCanvas) {
+    if (this.currentAction[0] === EditorAction.MovingCanvas) {
       setDocumentCursor("all-scroll");
       return;
     }
