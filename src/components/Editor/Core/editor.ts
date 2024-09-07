@@ -21,7 +21,7 @@ import {
   OUTER_BOX_OFFSET,
 } from "./consts";
 import { Canvas } from "./canvas";
-import { Element, Position } from "./types";
+import { Position } from "./types";
 import {
   createDraggingAction,
   createMovingCanvasAction,
@@ -33,13 +33,21 @@ import {
   isResizingAction,
   isSelectedElementAction,
 } from "./actions";
-import { getCurrentAction, setCurrentAction, resetCurrentAction } from "./state";
+import {
+  getCurrentAction,
+  setCurrentAction,
+  resetCurrentAction,
+  addElement,
+  setActiveElementIndex,
+  getActiveElement,
+  resetActiveElement,
+  getActiveElementIndex,
+  getElements,
+  getStaticElements,
+} from "./state";
 
 export class Editor {
   canvas: Canvas;
-
-  elements: Element[];
-  activeElementI = -1;
 
   // TODO: define a var with mouse pos and in canvas position?
   // TODO: Consider initializing to undefined
@@ -57,7 +65,6 @@ export class Editor {
   elementsHash = "";
 
   constructor(canvas: Canvas) {
-    this.elements = [];
     this.canvas = canvas;
   }
 
@@ -89,14 +96,10 @@ export class Editor {
 
     const text = new Text(label, x, y);
 
-    this.elements.push(text);
+    addElement(text);
 
     // Initial elements
     this.addText();
-  };
-
-  getActiveElement = () => {
-    return this.elements[this.activeElementI];
   };
 
   updateViewport = (
@@ -190,12 +193,14 @@ export class Editor {
     console.log({ elementI });
 
     if (elementI > -1) {
-      this.activeElementI = elementI;
+      setActiveElementIndex(elementI);
+
+      const activeElement = getActiveElement();
 
       const position = getElementBoxPosition(
         this.cursorX,
         this.cursorY,
-        this.elements[elementI].innerBox
+        activeElement.innerBox
       );
 
       if (position === ElementBoxPosition.InnerBox) {
@@ -206,7 +211,7 @@ export class Editor {
         );
       }
     } else {
-      this.activeElementI = -1;
+      resetActiveElement();
       setCurrentAction(createMovingCanvasAction(this.cursorX, this.cursorY));
     }
 
@@ -232,12 +237,12 @@ export class Editor {
 
     if (isDraggingAction(getCurrentAction())) {
       this.finishDragging();
-      this.selectElement(this.activeElementI);
+      this.selectElement(getActiveElementIndex());
     }
 
     if (isResizingAction(getCurrentAction())) {
       this.finishResizing();
-      this.selectElement(this.activeElementI);
+      this.selectElement(getActiveElementIndex());
     }
 
     if (isMovingCanvasAction(getCurrentAction())) {
@@ -284,7 +289,7 @@ export class Editor {
     }
 
     const timeoutId = setTimeout(() => {
-      const activeElement = this.getActiveElement();
+      const activeElement = getActiveElement();
 
       if (isText(activeElement)) {
         // @ts-expect-error a type issue with value
@@ -297,10 +302,12 @@ export class Editor {
     }, 0);
   };
 
+  // TODO: May be a separate function
   checkColisionsAtXY = (x: number, y: number) => {
-    for (let i = 0; i < this.elements.length; i++) {
+    const elements = getElements();
+    for (let i = 0; i < elements.length; i++) {
       const outerBox = expandBox(
-        this.elements[i].innerBox,
+        elements[i].innerBox,
         OUTER_BOX_OFFSET / this.zoom
       );
 
@@ -335,7 +342,7 @@ export class Editor {
     }
 
     if (isSelectedElementAction(getCurrentAction())) {
-      const innerBox = this.elements[elementI].innerBox;
+      const innerBox = getElements()[elementI].innerBox;
       const position = getElementBoxPosition(x, y, innerBox);
       setDocumentCursor(getCursorForElementBoxPosition(position));
     }
@@ -353,7 +360,7 @@ export class Editor {
     const dx = this.cursorX - currentAction[1].startX;
     const dy = this.cursorY - currentAction[1].startY;
 
-    const activeElement = this.elements[this.activeElementI];
+    const activeElement = getActiveElement();
 
     activeElement.setProps(activeElement.x + dx, activeElement.y + dy);
   };
@@ -363,7 +370,7 @@ export class Editor {
 
     if (!isResizingAction(currentAction)) return;
 
-    const activeElement = this.getActiveElement();
+    const activeElement = getActiveElement();
 
     activeElement.setProps(
       ...calculateResizedElementPosition(
@@ -392,24 +399,24 @@ export class Editor {
   };
 
   selectElement = (i: number) => {
-    this.activeElementI = i;
+    setActiveElementIndex(i);
     setCurrentAction(createSelectedElementAction());
 
-    if (isText(this.getActiveElement())) {
+    if (isText(getActiveElement())) {
       const input = document.getElementById("edit-text") as HTMLInputElement;
 
       if (!input) return;
       // @ts-expect-error a type issue with handleKeyDown
       input.addEventListener("keydown", this.handleKeyDown);
 
-      input.value = this.getActiveElement().label;
+      input.value = getActiveElement().label;
       input.focus();
     }
   };
 
   deselectElement = () => {
     resetCurrentAction();
-    this.activeElementI = -1;
+    resetActiveElement();
 
     const input = document.getElementById("edit-text") as HTMLInputElement;
 
@@ -423,9 +430,9 @@ export class Editor {
 
   addText = (label = "Text", x = 400, y = 100) => {
     const text = new Text(label, x, y);
-    this.elements.push(text);
+    addElement(text);
 
-    this.selectElement(this.elements.length - 1);
+    this.selectElement(getElements().length - 1);
 
     this.update();
   };
@@ -458,10 +465,11 @@ export class Editor {
 
     ////// PREPARE FRAME //////
 
+    const currentAction = getCurrentAction();
+    const activeElementI = getActiveElementIndex();
+
     let frameOffsetX = this.viewportOffsetX;
     let frameOffsetY = this.viewportOffsetY;
-
-    const currentAction = getCurrentAction();
 
     if (isMovingCanvasAction(currentAction)) {
       frameOffsetX -= this.cursorX - currentAction[1].startX;
@@ -472,9 +480,7 @@ export class Editor {
 
     ////// DRAW STATIC ELEMENTS //////
 
-    const staticElements = this.elements.filter(
-      (_, i) => i !== this.activeElementI
-    );
+    const staticElements = getStaticElements();
 
     const nextElementsHash = getRenderingHash(
       staticElements,
@@ -499,11 +505,11 @@ export class Editor {
 
     ////// DRAW ACTIVE ELEMENT //////
 
-    if (this.activeElementI < 0) {
+    if (activeElementI < 0) {
       return;
     }
 
-    const activeElement = this.elements[this.activeElementI];
+    const activeElement = getActiveElement();
 
     if (isDraggingAction(currentAction)) {
       const dx = activeElement.x + this.cursorX - currentAction[1].startX;
