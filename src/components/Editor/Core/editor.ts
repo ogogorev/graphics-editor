@@ -1,3 +1,5 @@
+import { KeyboardEvent } from "react";
+
 import { Text, isText } from "./elements/Text";
 import { loadFonts } from "./fonts/fonts";
 import { intializeControls } from "./controls";
@@ -19,26 +21,25 @@ import {
   OUTER_BOX_OFFSET,
 } from "./consts";
 import { Canvas } from "./canvas";
-import { EditorAction, Element, Position } from "./types";
-import { KeyboardEvent } from "react";
+import { Element, Position } from "./types";
 import {
   createDraggingAction,
   createMovingCanvasAction,
   createResizingAction,
   createSelectedElementAction,
+  isActionSet,
   isDraggingAction,
   isMovingCanvasAction,
   isResizingAction,
   isSelectedElementAction,
 } from "./actions";
+import { getCurrentAction, setCurrentAction, resetCurrentAction } from "./state";
 
 export class Editor {
   canvas: Canvas;
 
   elements: Element[];
   activeElementI = -1;
-
-  currentAction: EditorAction | [] = [];
 
   // TODO: define a var with mouse pos and in canvas position?
   // TODO: Consider initializing to undefined
@@ -96,10 +97,6 @@ export class Editor {
 
   getActiveElement = () => {
     return this.elements[this.activeElementI];
-  };
-
-  setCurrentAction = (action: EditorAction) => {
-    this.currentAction = action;
   };
 
   updateViewport = (
@@ -184,6 +181,7 @@ export class Editor {
     this.update();
   };
 
+  // TODO: Set actions in mouse move first
   handleMouseDown = (event: MouseEvent) => {
     this.setCursorPosition(event.offsetX, event.offsetY);
 
@@ -202,23 +200,21 @@ export class Editor {
 
       if (position === ElementBoxPosition.InnerBox) {
         this.startDragging();
-      } else if (isSelectedElementAction(this.currentAction)) {
-        this.setCurrentAction(
+      } else if (isSelectedElementAction(getCurrentAction())) {
+        setCurrentAction(
           createResizingAction(this.cursorX, this.cursorY, position)
         );
       }
     } else {
       this.activeElementI = -1;
-      this.setCurrentAction(
-        createMovingCanvasAction(this.cursorX, this.cursorY)
-      );
+      setCurrentAction(createMovingCanvasAction(this.cursorX, this.cursorY));
     }
 
     this.startUpdating();
   };
 
   handleMouseMove = (event: MouseEvent) => {
-    if (this.currentAction[0]) {
+    if (isActionSet(getCurrentAction())) {
       this.setCursorPosition(event.offsetX, event.offsetY);
     }
 
@@ -230,21 +226,21 @@ export class Editor {
 
     console.log("mouse up");
 
-    if (isSelectedElementAction(this.currentAction)) {
+    if (isSelectedElementAction(getCurrentAction())) {
       this.deselectElement();
     }
 
-    if (isDraggingAction(this.currentAction)) {
+    if (isDraggingAction(getCurrentAction())) {
       this.finishDragging();
       this.selectElement(this.activeElementI);
     }
 
-    if (isResizingAction(this.currentAction)) {
+    if (isResizingAction(getCurrentAction())) {
       this.finishResizing();
       this.selectElement(this.activeElementI);
     }
 
-    if (isMovingCanvasAction(this.currentAction)) {
+    if (isMovingCanvasAction(getCurrentAction())) {
       this.finishMovingCanvas();
     }
 
@@ -277,7 +273,7 @@ export class Editor {
   handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     console.log("key down", event);
 
-    if (!isSelectedElementAction(this.currentAction)) {
+    if (!isSelectedElementAction(getCurrentAction())) {
       return;
     }
 
@@ -291,7 +287,7 @@ export class Editor {
       const activeElement = this.getActiveElement();
 
       if (isText(activeElement)) {
-        // @ts-expect-error
+        // @ts-expect-error a type issue with value
         activeElement.setLabel(event.target.value);
 
         this.update();
@@ -316,13 +312,13 @@ export class Editor {
 
   updateCursor = (x: number, y: number) => {
     if (
-      isDraggingAction(this.currentAction) ||
-      isResizingAction(this.currentAction)
+      isDraggingAction(getCurrentAction()) ||
+      isResizingAction(getCurrentAction())
     ) {
       return;
     }
 
-    if (isMovingCanvasAction(this.currentAction)) {
+    if (isMovingCanvasAction(getCurrentAction())) {
       setDocumentCursor("all-scroll");
       return;
     }
@@ -334,11 +330,11 @@ export class Editor {
       return;
     }
 
-    if (!this.currentAction[0]) {
+    if (!isActionSet(getCurrentAction())) {
       setDocumentCursor("grab");
     }
 
-    if (isSelectedElementAction(this.currentAction)) {
+    if (isSelectedElementAction(getCurrentAction())) {
       const innerBox = this.elements[elementI].innerBox;
       const position = getElementBoxPosition(x, y, innerBox);
       setDocumentCursor(getCursorForElementBoxPosition(position));
@@ -346,15 +342,16 @@ export class Editor {
   };
 
   startDragging = () => {
-    this.setCurrentAction(createDraggingAction(this.cursorX, this.cursorY));
+    setCurrentAction(createDraggingAction(this.cursorX, this.cursorY));
     setDocumentCursor("grabbing");
   };
 
   finishDragging = () => {
-    if (!isDraggingAction(this.currentAction)) return;
+    const currentAction = getCurrentAction();
+    if (!isDraggingAction(currentAction)) return;
 
-    const dx = this.cursorX - this.currentAction[1].startX;
-    const dy = this.cursorY - this.currentAction[1].startY;
+    const dx = this.cursorX - currentAction[1].startX;
+    const dy = this.cursorY - currentAction[1].startY;
 
     const activeElement = this.elements[this.activeElementI];
 
@@ -362,43 +359,47 @@ export class Editor {
   };
 
   finishResizing = () => {
-    if (!isResizingAction(this.currentAction)) return;
+    const currentAction = getCurrentAction();
+
+    if (!isResizingAction(currentAction)) return;
 
     const activeElement = this.getActiveElement();
 
     activeElement.setProps(
       ...calculateResizedElementPosition(
         activeElement,
-        this.currentAction[1].direction,
+        currentAction[1].direction,
         this.cursorX,
         this.cursorY,
-        this.currentAction[1].startX,
-        this.currentAction[1].startY
+        currentAction[1].startX,
+        currentAction[1].startY
       )
     );
 
-    this.currentAction = [];
+    resetCurrentAction();
   };
 
   finishMovingCanvas = () => {
-    if (!isMovingCanvasAction(this.currentAction)) return;
+    const currentAction = getCurrentAction();
 
-    const dx = this.cursorX - this.currentAction[1].startX;
-    const dy = this.cursorY - this.currentAction[1].startY;
+    if (!isMovingCanvasAction(currentAction)) return;
+
+    const dx = this.cursorX - currentAction[1].startX;
+    const dy = this.cursorY - currentAction[1].startY;
 
     this.updateViewport(undefined, dx, dy);
-    this.currentAction = [];
+    resetCurrentAction();
   };
 
   selectElement = (i: number) => {
     this.activeElementI = i;
-    this.setCurrentAction(createSelectedElementAction());
+    setCurrentAction(createSelectedElementAction());
 
     if (isText(this.getActiveElement())) {
       const input = document.getElementById("edit-text") as HTMLInputElement;
 
       if (!input) return;
-      // @ts-expect-error
+      // @ts-expect-error a type issue with handleKeyDown
       input.addEventListener("keydown", this.handleKeyDown);
 
       input.value = this.getActiveElement().label;
@@ -407,7 +408,7 @@ export class Editor {
   };
 
   deselectElement = () => {
-    this.currentAction = [];
+    resetCurrentAction();
     this.activeElementI = -1;
 
     const input = document.getElementById("edit-text") as HTMLInputElement;
@@ -415,7 +416,7 @@ export class Editor {
     if (input) {
       input.value = "";
 
-      // @ts-expect-error
+      // @ts-expect-error a type issue with handleKeyDown
       input.removeEventListener("keydown", this.handleKeyDown);
     }
   };
@@ -460,9 +461,11 @@ export class Editor {
     let frameOffsetX = this.viewportOffsetX;
     let frameOffsetY = this.viewportOffsetY;
 
-    if (isMovingCanvasAction(this.currentAction)) {
-      frameOffsetX -= this.cursorX - this.currentAction[1].startX;
-      frameOffsetY -= this.cursorY - this.currentAction[1].startY;
+    const currentAction = getCurrentAction();
+
+    if (isMovingCanvasAction(currentAction)) {
+      frameOffsetX -= this.cursorX - currentAction[1].startX;
+      frameOffsetY -= this.cursorY - currentAction[1].startY;
     }
 
     this.canvas.prepareFrame(this.zoom, -frameOffsetX, -frameOffsetY);
@@ -502,14 +505,14 @@ export class Editor {
 
     const activeElement = this.elements[this.activeElementI];
 
-    if (isDraggingAction(this.currentAction)) {
-      const dx = activeElement.x + this.cursorX - this.currentAction[1].startX;
-      const dy = activeElement.y + this.cursorY - this.currentAction[1].startY;
+    if (isDraggingAction(currentAction)) {
+      const dx = activeElement.x + this.cursorX - currentAction[1].startX;
+      const dy = activeElement.y + this.cursorY - currentAction[1].startY;
 
       this.canvas.drawElement(activeElement, dx, dy);
     }
 
-    if (isSelectedElementAction(this.currentAction)) {
+    if (isSelectedElementAction(getCurrentAction())) {
       this.canvas.drawElement(activeElement);
 
       this.canvas.restoreTransform();
@@ -522,8 +525,8 @@ export class Editor {
       this.canvas.drawSelectionBox(selectionBox);
     }
 
-    if (isResizingAction(this.currentAction)) {
-      const { startX, startY, direction } = this.currentAction[1];
+    if (isResizingAction(currentAction)) {
+      const { startX, startY, direction } = currentAction[1];
 
       const [x, y, scaleX, scaleY] = calculateResizedElementPosition(
         activeElement,

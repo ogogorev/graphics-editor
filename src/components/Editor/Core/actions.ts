@@ -59,3 +59,9 @@ export const isMovingCanvasAction = (
 ): action is MovingCanvasAction => {
   return action[0] === EditorActionType.MovingCanvas;
 };
+
+export const isActionSet = (
+  action: EditorAction | []
+): action is EditorAction => {
+  return Boolean(action[0]);
+};
