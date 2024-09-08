@@ -1,3 +1,22 @@
 .control-panel {
   position: absolute;
+  top: 1rem;
+  left: 1rem;
+}
+
+#add-text {
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #ddd;
+  border-radius: 1000px;
+  box-shadow: 0 0 10px 0px rgba(0, 0, 0, 0.15);
+
+  color: #333;
+  font-size: 16px;
+  background-color: white;
+
+  cursor: pointer;
+
+  &:hover {
+    border-color: #ccc;
+  }
 }

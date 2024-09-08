@@ -7,13 +7,13 @@ export const Controls = () => {
         Add text
       </button>
 
-      <button id="zoom-in" type="button">
+      {/* <button id="zoom-in" type="button">
         +
       </button>
 
       <button id="zoom-out" type="button">
         -
-      </button>
+      </button> */}
     </div>
   );
 };
