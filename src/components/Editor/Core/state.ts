@@ -2,6 +2,18 @@ import { atom, computed } from "nanostores";
 
 import { EditorAction, Element } from "./types";
 
+//////// RENDERING STATE ////////
+
+export const $renderingKey = atom<number>(1);
+export const updateRenderingKey = () => {
+  $renderingKey.set(($renderingKey.get() + 1) % 10);
+};
+
+export const scheduleUpdate = (cb: () => void) => {
+  cb();
+  updateRenderingKey();
+};
+
 //////// ACTION ////////
 
 export const $currentAction = atom<EditorAction | []>([]);

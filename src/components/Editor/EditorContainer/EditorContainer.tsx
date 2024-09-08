@@ -3,9 +3,9 @@ import { useEffect, useRef } from "react";
 import { Canvas } from "../Core/canvas";
 import { Editor } from "../Core/editor";
 import { Controls } from "../Controls/Controls";
+import { ElementDetails } from "../ElementDetails/ElementDetails";
 
 import "./EditorContainer.css";
-import { ElementDetails } from "../ElementDetails/ElementDetails";
 
 export const EditorContainer = () => {
   const editorRef = useRef<Editor | null>(null);
@@ -28,7 +28,7 @@ export const EditorContainer = () => {
   return (
     <div>
       <Controls />
-      <ElementDetails onChange={() => editorRef.current?.update()} />
+      <ElementDetails />
 
       <canvas id="canvas"></canvas>
       <input id="edit-text" />

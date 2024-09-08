@@ -44,6 +44,7 @@ import {
   getActiveElementIndex,
   getElements,
   getStaticElements,
+  $renderingKey,
 } from "./state";
 
 export class Editor {
@@ -100,6 +101,10 @@ export class Editor {
 
     // Initial elements
     this.addText();
+
+    $renderingKey.listen(() => {
+      this.update();
+    });
   };
 
   updateViewport = (
