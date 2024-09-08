@@ -1,4 +1,4 @@
-import { atom } from "nanostores";
+import { atom, computed } from "nanostores";
 
 import { EditorAction, Element } from "./types";
 
@@ -30,6 +30,7 @@ export const addElement = (element: Element) => {
   $elements.set([...$elements.get(), element]);
 };
 
+// TODO: Use computed here
 export const getStaticElements = () => {
   const activeElementI = getActiveElementIndex();
   return getElements().filter((_, i) => i !== activeElementI);
@@ -47,10 +48,14 @@ export const setActiveElementIndex = (index: number) => {
   $activeElementI.set(index);
 };
 
-export const getActiveElement = () => {
-  return getElements()[getActiveElementIndex()];
-};
-
 export const resetActiveElement = () => {
   setActiveElementIndex(-1);
+};
+
+export const $activeElement = computed($activeElementI, (activeElementI) => {
+  return getElements()[activeElementI];
+});
+
+export const getActiveElement = () => {
+  return $activeElement.get();
 };
