@@ -3,8 +3,8 @@ import {
   SELECTION_BOX_OFFSET,
   SELECTION_COLOR,
 } from "./consts";
-import { OpentypeFont } from "./fonts/types";
-import { Box, Element, ElementType } from "./types";
+import { isText, Text } from "./elements/Text";
+import { Box, Element } from "./types";
 
 const W = window.innerWidth;
 const H = window.innerHeight;
@@ -75,13 +75,8 @@ export class Canvas {
     }
   };
 
-  drawTextWithFont = (
-    font: OpentypeFont,
-    label: string,
-    x: number,
-    y: number
-  ) => {
-    font.draw(this.ctx, label, x, y);
+  drawOpentypeText = (textElement: Text) => {
+    textElement.path.draw(this.ctx);
   };
 
   drawSelectionBox = (box: Box) => {
@@ -137,8 +132,8 @@ export class Canvas {
   };
 
   drawElementContent = (element: Element) => {
-    if (element.type === ElementType.Text) {
-      this.drawTextWithFont(element.font, element.label, 0, element.fontSize);
+    if (isText(element)) {
+      this.drawOpentypeText(element);
     }
   };
 

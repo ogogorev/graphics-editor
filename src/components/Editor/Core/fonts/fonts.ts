@@ -1,4 +1,4 @@
-// @ts-expect-error
+// @ts-expect-error missing type declaration
 import opentype from "opentype.js";
 
 import robotoUrl from "/src/assets/fonts/Roboto-Regular.ttf";

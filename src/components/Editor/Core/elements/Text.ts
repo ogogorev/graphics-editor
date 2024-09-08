@@ -1,15 +1,16 @@
 import { loadedFonts } from "../fonts/fonts";
-import { FontId } from "../fonts/types";
-import { Element, ElementType } from "../types";
+import { FontId, OpentypeFont } from "../fonts/types";
+import { Element, ElementType, OpentypePath } from "../types";
 import { getInnerBox } from "../utils";
 
 export class Text implements Element {
   type = ElementType.Text;
 
-  label;
-  path;
-  font;
+  label: string;
+  path: OpentypePath;
+  font: OpentypeFont;
   fontSize = 72;
+  color: string;
 
   x;
   y;
@@ -18,14 +19,17 @@ export class Text implements Element {
 
   localBox;
 
-  constructor(label: string, x: number, y: number) {
+  constructor(label = "Text", color = "black", x = 400, y = 100) {
     this.label = label;
+    this.color = color;
     this.x = x;
     this.y = y;
 
     this.font = loadedFonts[FontId.SankofaDisplay];
 
-    this.path = this.font.getPath(this.label, 0, this.fontSize, this.fontSize);
+    this.path = this.getPath();
+    this.updateColorOnPath();
+
     this.localBox = this.path.getBoundingBox();
   }
 
@@ -33,6 +37,10 @@ export class Text implements Element {
     this.label = newLabel;
 
     this.update();
+  };
+
+  getPath = () => {
+    return this.font.getPath(this.label, 0, this.fontSize, this.fontSize);
   };
 
   setProps = (x: number, y: number, scaleX?: number, scaleY?: number) => {
@@ -50,11 +58,17 @@ export class Text implements Element {
   };
 
   updatePath = () => {
-    this.path = this.font.getPath(this.label, 0, this.fontSize, this.fontSize);
+    this.path = this.getPath();
+    this.updateColorOnPath();
   };
 
   updateBox = () => {
     this.localBox = this.path.getBoundingBox();
+  };
+
+  // A workaround to set color on text. Not an ideal solution.
+  updateColorOnPath = () => {
+    this.path.fill = this.color;
   };
 
   get w() {

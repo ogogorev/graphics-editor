@@ -1,5 +1,4 @@
 import { ElementBoxPosition } from "./consts";
-import { OpentypeFont } from "./fonts/types";
 
 export type Position = [number, number];
 
@@ -44,17 +43,16 @@ export enum ElementType {
   Text = "Text",
 }
 
-export type Path = {
+export type OpentypePath = {
   getBoundingBox: () => Box;
+  fill: string;
+  draw: (
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D
+  ) => void;
 };
 
 export type Element = {
   type: ElementType;
-
-  label: string;
-  path: Path;
-  font: OpentypeFont;
-  fontSize: number;
 
   x: number;
   y: number;

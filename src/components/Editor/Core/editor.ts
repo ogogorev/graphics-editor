@@ -94,7 +94,7 @@ export class Editor {
     const x = 800;
     const y = 200;
 
-    const text = new Text(label, x, y);
+    const text = new Text(label, "red", x, y);
 
     addElement(text);
 
@@ -402,14 +402,16 @@ export class Editor {
     setActiveElementIndex(i);
     setCurrentAction(createSelectedElementAction());
 
-    if (isText(getActiveElement())) {
+    const activeElement = getActiveElement();
+
+    if (isText(activeElement)) {
       const input = document.getElementById("edit-text") as HTMLInputElement;
 
       if (!input) return;
       // @ts-expect-error a type issue with handleKeyDown
       input.addEventListener("keydown", this.handleKeyDown);
 
-      input.value = getActiveElement().label;
+      input.value = activeElement.label;
       input.focus();
     }
   };
@@ -428,8 +430,8 @@ export class Editor {
     }
   };
 
-  addText = (label = "Text", x = 400, y = 100) => {
-    const text = new Text(label, x, y);
+  addText = (label?: string, color?: string, x?: number, y?: number) => {
+    const text = new Text(label, color, x, y);
     addElement(text);
 
     this.selectElement(getElements().length - 1);
