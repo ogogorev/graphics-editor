@@ -8,7 +8,7 @@ type TextDetailsProps = {
   onColorChange: (newColor: string) => void;
 };
 
-const COLORS = ["red", "green", "blue"];
+const COLORS = ["red", "green", "blue", "black"];
 
 export const TextDetails: FC<TextDetailsProps> = ({ text, onColorChange }) => {
   const { color } = text;

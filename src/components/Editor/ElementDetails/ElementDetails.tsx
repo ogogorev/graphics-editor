@@ -1,5 +1,6 @@
 import { FC } from "react";
 import { useStore } from "@nanostores/react";
+import classNames from "classnames";
 
 import { $activeElement, $renderingKey, scheduleUpdate } from "../Core/state";
 import { isText } from "../Core/elements/Text";
@@ -21,7 +22,11 @@ export const ElementDetails: FC = () => {
   };
 
   return (
-    <div className="details-panel">
+    <div
+      className={classNames("details-panel", {
+        active: Boolean(activeElement),
+      })}
+    >
       {activeElement && isText(activeElement) && (
         <TextDetails text={activeElement} onColorChange={handleColorSelect} />
       )}
