@@ -5,19 +5,20 @@ import { Editor } from "../Core/editor";
 import { Controls } from "../Controls/Controls";
 
 import "./EditorContainer.css";
+import { ElementDetails } from "../ElementDetails/ElementDetails";
 
 export const EditorContainer = () => {
-  const initialized = useRef(false);
+  const editorRef = useRef<Editor | null>(null);
 
   useEffect(() => {
-    if (initialized.current) return;
+    if (editorRef.current) return;
 
     const init = async () => {
-      initialized.current = true;
-
       const canvas = new Canvas("canvas");
 
       const editor = new Editor(canvas);
+      editorRef.current = editor;
+
       await editor.init();
     };
 
@@ -27,6 +28,8 @@ export const EditorContainer = () => {
   return (
     <div>
       <Controls />
+      <ElementDetails onChange={() => editorRef.current?.update()} />
+
       <canvas id="canvas"></canvas>
       <input id="edit-text" />
     </div>

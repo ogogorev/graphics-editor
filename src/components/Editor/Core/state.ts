@@ -59,3 +59,6 @@ export const $activeElement = computed($activeElementI, (activeElementI) => {
 export const getActiveElement = () => {
   return $activeElement.get();
 };
+
+$activeElementI.subscribe((v) => console.log("active element Index", v));
+$activeElement.subscribe((v) => console.log("active element", v));

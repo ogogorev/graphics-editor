@@ -71,6 +71,11 @@ export class Text implements Element {
     this.path.fill = this.color;
   };
 
+  setColor = (newColor: string) => {
+    this.color = newColor;
+    this.updateColorOnPath();
+  };
+
   get w() {
     return (this.localBox.x2 - this.localBox.x1) * this.scaleX;
   }
