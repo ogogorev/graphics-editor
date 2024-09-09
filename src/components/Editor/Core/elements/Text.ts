@@ -25,7 +25,7 @@ export class Text implements Element {
     this.x = x;
     this.y = y;
 
-    this.font = loadedFonts[FontId.SankofaDisplay];
+    this.font = loadedFonts[FontId.Roboto];
 
     this.path = this.getPath();
     this.updateColorOnPath();
