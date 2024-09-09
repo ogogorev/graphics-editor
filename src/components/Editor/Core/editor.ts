@@ -14,46 +14,22 @@ import {
 } from "./utils";
 import { ElementBoxPosition, OUTER_BOX_OFFSET } from "./consts";
 import { Canvas } from "./canvas";
-import {
-  DraggingAction,
-  EditorAction,
-  EditorActionType,
-  Element,
-  ElementType,
-  MovingCanvasAction,
-  Position,
-  ResizingAction,
-} from "./types";
+import { EditorAction, Element, ElementType, Position } from "./types";
 import { KeyboardEvent } from "react";
+import {
+  createDraggingAction,
+  createMovingCanvasAction,
+  createResizingAction,
+  createSelectedElementAction,
+  isDraggingAction,
+  isMovingCanvasAction,
+  isResizingAction,
+  isSelectedElementAction,
+} from "./actions";
 
 // TODO: Move to consts
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 8;
-
-// TODO: Move away
-const createDraggingAction = (x: number, y: number): DraggingAction => {
-  return [EditorActionType.Dragging, { x, y }];
-};
-
-// TODO: Move away
-// TODO: Unomment
-// const createSelectedElementAction = () => {
-//   return [ACTIONS.SelectedElement];
-// };
-
-// TODO: Move away
-const createResizingAction = (
-  x: number,
-  y: number,
-  direction: ElementBoxPosition
-): ResizingAction => {
-  return [EditorActionType.Resizing, { x, y, direction }];
-};
-
-// TODO: Move away
-const createMovingCanvasAction = (x: number, y: number): MovingCanvasAction => {
-  return [EditorActionType.MovingCanvas, { startX: x, startY: y }];
-};
 
 export class Editor {
   canvas: Canvas;
@@ -225,7 +201,7 @@ export class Editor {
 
       if (position === ElementBoxPosition.InnerBox) {
         this.startDragging();
-      } else if (this.currentAction[0] === EditorActionType.SelectedElement) {
+      } else if (isSelectedElementAction(this.currentAction)) {
         this.setCurrentAction(
           createResizingAction(this.cursorX, this.cursorY, position)
         );
@@ -253,21 +229,21 @@ export class Editor {
 
     console.log("mouse up");
 
-    if (this.currentAction[0] === EditorActionType.SelectedElement) {
+    if (isSelectedElementAction(this.currentAction)) {
       this.deselectElement();
     }
 
-    if (this.currentAction[0] === EditorActionType.Dragging) {
+    if (isDraggingAction(this.currentAction)) {
       this.finishDragging();
       this.selectElement(this.activeElementI);
     }
 
-    if (this.currentAction[0] === EditorActionType.Resizing) {
+    if (isResizingAction(this.currentAction)) {
       this.finishResizing();
       this.selectElement(this.activeElementI);
     }
 
-    if (this.currentAction[0] === EditorActionType.MovingCanvas) {
+    if (isMovingCanvasAction(this.currentAction)) {
       this.finishMovingCanvas();
     }
 
@@ -300,7 +276,7 @@ export class Editor {
   handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     console.log("key down", event);
 
-    if (this.currentAction[0] !== EditorActionType.SelectedElement) {
+    if (!isSelectedElementAction(this.currentAction)) {
       return;
     }
 
@@ -338,13 +314,13 @@ export class Editor {
 
   updateCursor = (x: number, y: number) => {
     if (
-      this.currentAction[0] === EditorActionType.Dragging ||
-      this.currentAction[0] === EditorActionType.Resizing
+      isDraggingAction(this.currentAction) ||
+      isResizingAction(this.currentAction)
     ) {
       return;
     }
 
-    if (this.currentAction[0] === EditorActionType.MovingCanvas) {
+    if (isMovingCanvasAction(this.currentAction)) {
       setDocumentCursor("all-scroll");
       return;
     }
@@ -360,7 +336,7 @@ export class Editor {
       setDocumentCursor("grab");
     }
 
-    if (this.currentAction[0] === EditorActionType.SelectedElement) {
+    if (isSelectedElementAction(this.currentAction)) {
       const innerBox = this.elements[elementI].innerBox;
       const position = getElementBoxPosition(x, y, innerBox);
       setDocumentCursor(getCursorForElementBoxPosition(position));
@@ -373,7 +349,7 @@ export class Editor {
   };
 
   finishDragging = () => {
-    if (this.currentAction[0] !== EditorActionType.Dragging) return;
+    if (!isDraggingAction(this.currentAction)) return;
 
     const dx = this.cursorX - this.currentAction[1].x;
     const dy = this.cursorY - this.currentAction[1].y;
@@ -391,7 +367,7 @@ export class Editor {
   };
 
   finishResizing = () => {
-    if (this.currentAction[0] !== EditorActionType.Resizing) return;
+    if (!isResizingAction(this.currentAction)) return;
 
     const activeElement = this.getActiveElement();
 
@@ -412,7 +388,7 @@ export class Editor {
   };
 
   finishMovingCanvas = () => {
-    if (this.currentAction[0] !== EditorActionType.MovingCanvas) return;
+    if (!isMovingCanvasAction(this.currentAction)) return;
 
     const dx = this.cursorX - this.currentAction[1].startX;
     const dy = this.cursorY - this.currentAction[1].startY;
@@ -423,8 +399,7 @@ export class Editor {
 
   selectElement = (i: number) => {
     this.activeElementI = i;
-    // TODO: Use function for action creation here
-    this.currentAction = [EditorActionType.SelectedElement];
+    this.setCurrentAction(createSelectedElementAction());
 
     if (isText(this.getActiveElement())) {
       const input = document.getElementById("edit-text") as HTMLInputElement;
@@ -492,7 +467,7 @@ export class Editor {
     let frameOffsetX = this.viewportOffsetX;
     let frameOffsetY = this.viewportOffsetY;
 
-    if (this.currentAction[0] === EditorActionType.MovingCanvas) {
+    if (isMovingCanvasAction(this.currentAction)) {
       frameOffsetX -= this.cursorX - this.currentAction[1].startX;
       frameOffsetY -= this.cursorY - this.currentAction[1].startY;
     }
@@ -534,15 +509,14 @@ export class Editor {
 
     const activeElement = this.elements[this.activeElementI];
 
-    // TODO: Create helper function for checking action types
-    if (this.currentAction[0] === EditorActionType.Dragging) {
+    if (isDraggingAction(this.currentAction)) {
       const dx = activeElement.x + this.cursorX - this.currentAction[1].x;
       const dy = activeElement.y + this.cursorY - this.currentAction[1].y;
 
       this.canvas.drawElement(activeElement, dx, dy);
     }
 
-    if (this.currentAction[0] === EditorActionType.SelectedElement) {
+    if (isSelectedElementAction(this.currentAction)) {
       this.canvas.drawElement(activeElement);
 
       this.canvas.restoreTransform();
@@ -555,7 +529,7 @@ export class Editor {
       this.canvas.drawSelectionBox(selectionBox);
     }
 
-    if (this.currentAction[0] === EditorActionType.Resizing) {
+    if (isResizingAction(this.currentAction)) {
       const { x: startX, y: startY, direction } = this.currentAction[1];
 
       const [x, y, scaleX, scaleY] = calculateResizedElementPosition(
