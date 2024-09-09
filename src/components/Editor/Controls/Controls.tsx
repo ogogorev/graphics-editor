@@ -1,3 +1,5 @@
+import "./Controls.css";
+
 export const Controls = () => {
   return (
     <div className="control-panel">
