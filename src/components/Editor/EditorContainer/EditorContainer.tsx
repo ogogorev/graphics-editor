@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 
-import { Canvas } from "./canvas";
-import { Editor } from "./editor";
-import { Controls } from "./Controls/Controls";
+import { Canvas } from "../Core/canvas";
+import { Editor } from "../Core/editor";
+import { Controls } from "../Controls/Controls";
 
 import "./EditorContainer.css";
 
