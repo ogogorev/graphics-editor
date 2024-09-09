@@ -138,10 +138,10 @@ export class Canvas {
 
   drawElement = (
     element: Element,
-    x: number,
-    y: number,
-    scaleX: number,
-    scaleY: number
+    x?: number,
+    y?: number,
+    scaleX?: number,
+    scaleY?: number
   ) => {
     this.ctx.save();
 

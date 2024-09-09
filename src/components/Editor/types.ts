@@ -10,7 +10,10 @@ export enum EditorActionType {
 }
 
 // TODO: Rename x, y to startX, startY
-export type DraggingAction = [EditorActionType, { x: number; y: number }];
+export type DraggingAction = [
+  EditorActionType.Dragging,
+  { x: number; y: number }
+];
 // TODO: Rename x, y to startX, startY
 export type ResizingAction = [
   EditorActionType.Resizing,
@@ -21,7 +24,13 @@ export type MovingCanvasAction = [
   { startX: number; startY: number }
 ];
 
-export type EditorAction = DraggingAction | ResizingAction | MovingCanvasAction;
+export type SelectedElementAction = [EditorActionType.SelectedElement];
+
+export type EditorAction =
+  | DraggingAction
+  | ResizingAction
+  | MovingCanvasAction
+  | SelectedElementAction;
 
 export type Box = {
   x1: number;

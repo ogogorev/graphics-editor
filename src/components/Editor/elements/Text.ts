@@ -69,3 +69,8 @@ export class Text implements Element {
     return getInnerBox(this.x, this.y, this.localBox, this.scaleX, this.scaleY);
   }
 }
+
+// TODO: Create own file for this
+export const isText = (element: Element): element is Text => {
+  return element.type === ElementType.Text;
+};

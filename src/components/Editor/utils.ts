@@ -33,7 +33,7 @@ export const calculateResizedElementPosition = (
   mouseCurrY: number,
   mouseStartX: number,
   mouseStartY: number
-) => {
+): [number, number, number, number] => {
   const [kX, kY] = getVectorByPosition(direction);
 
   const distX = (mouseCurrX - mouseStartX) * kX;
@@ -158,7 +158,7 @@ export const getElementBoxPosition = (
     return ElementBoxPosition.Bottom;
   }
 
-  throw new Error("Cannot define element position")
+  throw new Error("Cannot define element position");
 };
 
 export const getCursorForElementBoxPosition = (
@@ -184,7 +184,7 @@ export const getCursorForElementBoxPosition = (
   }
 };
 
-export const setDocumentCursor = (cursor: string) => {
+export const setDocumentCursor = (cursor?: string) => {
   if (document.body.style.cursor !== cursor) {
     document.body.style.cursor = cursor ?? "";
   }
