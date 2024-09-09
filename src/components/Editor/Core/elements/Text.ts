@@ -1,5 +1,5 @@
-// @ts-expect-error missing declaration
-import { FONTS, loadedFonts } from "../fonts";
+import { loadedFonts } from "../fonts/fonts";
+import { FontId } from "../fonts/types";
 import { Element, ElementType } from "../types";
 import { getInnerBox } from "../utils";
 
@@ -23,7 +23,7 @@ export class Text implements Element {
     this.x = x;
     this.y = y;
 
-    this.font = loadedFonts[FONTS.SankofaDisplay.id];
+    this.font = loadedFonts[FontId.SankofaDisplay];
 
     this.path = this.font.getPath(this.label, 0, this.fontSize, this.fontSize);
     this.localBox = this.path.getBoundingBox();

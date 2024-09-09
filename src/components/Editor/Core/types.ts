@@ -1,4 +1,5 @@
 import { ElementBoxPosition } from "./consts";
+import { OpentypeFont } from "./fonts/types";
 
 export type Position = [number, number];
 
@@ -46,14 +47,13 @@ export enum ElementType {
 export type Path = {
   getBoundingBox: () => Box;
 };
-export type Font = any;
 
 export type Element = {
   type: ElementType;
 
   label: string;
   path: Path;
-  font: Font;
+  font: OpentypeFont;
   fontSize: number;
 
   x: number;

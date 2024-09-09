@@ -1,6 +1,5 @@
 import { Text, isText } from "./elements/Text";
-// @ts-expect-error
-import { loadFonts } from "./fonts";
+import { loadFonts } from "./fonts/fonts";
 import { intializeControls } from "./controls";
 import {
   getCursorForElementBoxPosition,

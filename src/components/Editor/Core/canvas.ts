@@ -3,7 +3,8 @@ import {
   SELECTION_BOX_OFFSET,
   SELECTION_COLOR,
 } from "./consts";
-import { Box, Element, ElementType, Font } from "./types";
+import { OpentypeFont } from "./fonts/types";
+import { Box, Element, ElementType } from "./types";
 
 const W = window.innerWidth;
 const H = window.innerHeight;
@@ -74,7 +75,12 @@ export class Canvas {
     }
   };
 
-  drawTextWithFont = (font: Font, label: string, x: number, y: number) => {
+  drawTextWithFont = (
+    font: OpentypeFont,
+    label: string,
+    x: number,
+    y: number
+  ) => {
     font.draw(this.ctx, label, x, y);
   };
 

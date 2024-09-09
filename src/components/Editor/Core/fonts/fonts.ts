@@ -1,24 +1,27 @@
+// @ts-expect-error
 import opentype from "opentype.js";
 
 import robotoUrl from "/src/assets/fonts/Roboto-Regular.ttf";
 import sankofaDisplayUrl from "/src/assets/fonts/SankofaDisplay-Regular.ttf";
 
-export const FONTS = {
-  SankofaDisplay: {
-    id: "SankofaDisplay",
+import { FontId, FontInfo, OpentypeFont } from "./types";
+
+export const FONTS: Record<FontId, FontInfo> = {
+  [FontId.SankofaDisplay]: {
+    id: FontId.SankofaDisplay,
     name: "Sankofa Display",
     url: sankofaDisplayUrl,
   },
-  Roboto: {
-    id: "Roboto",
+  [FontId.Roboto]: {
+    id: FontId.Roboto,
     name: "Roboto",
     url: robotoUrl,
   },
 };
 
-export const loadedFonts = {};
+export const loadedFonts: Partial<Record<FontId, OpentypeFont>> = {};
 
-export async function loadFont(fontInfo) {
+export async function loadFont(fontInfo: FontInfo) {
   const res = await fetch(fontInfo.url);
   const fontBuffer = res.arrayBuffer();
 
