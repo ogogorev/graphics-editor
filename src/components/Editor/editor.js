@@ -1,6 +1,6 @@
-import { Text } from "./elements/text.js";
-import { loadFonts } from "./fonts.js";
-import { intializeControls } from "./controls.js";
+import { Text } from "./elements/Text.js";
+import { loadFonts } from "./fonts";
+import { intializeControls } from "./controls";
 import {
   getCursorForElementBoxPosition,
   getElementBoxPosition,
@@ -66,10 +66,17 @@ export class Editor {
   }
 
   init = async () => {
-    await loadFonts();
+    try {
+      await loadFonts();
+    } catch (error) {
+      console.error("Failed to load fonts", error);
+    }
+    console.log("init");
 
     intializeControls({
-      onAddText: this.addText,
+      onAddText: () => {
+        this.addText();
+      },
       onZoomIn: this.handleZoomInClick,
       onZoomOut: this.handleZoomOutClick,
     });
@@ -443,6 +450,8 @@ export class Editor {
   };
 
   doUpdate = () => {
+    console.log("do update");
+
     let frameOffsetX = this.viewportOffsetX;
     let frameOffsetY = this.viewportOffsetY;
 

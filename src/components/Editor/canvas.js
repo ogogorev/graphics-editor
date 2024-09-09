@@ -2,7 +2,7 @@ import {
   SELECTION_BOX_CONTROL_POINT_SIZE,
   SELECTION_BOX_OFFSET,
   SELECTION_COLOR,
-} from "./consts.js";
+} from "./consts";
 
 const W = window.innerWidth;
 const H = window.innerHeight;

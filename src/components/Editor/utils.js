@@ -1,4 +1,4 @@
-import { ELEMENT_BOX_POSITION } from "./consts.js";
+import { ELEMENT_BOX_POSITION } from "./consts";
 
 export const getVectorByPosition = (position) => {
   switch (position) {

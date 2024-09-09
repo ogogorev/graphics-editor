@@ -1,3 +1,6 @@
+import opentype from "opentype.js";
+// import wawoff2 from "wawoff2";
+
 export const FONTS = {
   SankofaDisplay: {
     id: "SankofaDisplay",
@@ -15,20 +18,26 @@ export const loadedFonts = {};
 //   const res = await fetch(fontInfo.url);
 //   const fontBuffer = res.arrayBuffer();
 
+//   console.log({ fontBuffer });
+
 //   const font = opentype.parse(await fontBuffer);
 
 //   loadedFonts[fontInfo.id] = font;
 // }
 
 export async function loadFont(fontInfo) {
-  const res = await fetch(fontInfo.url);
-  const fontBuffer = res.arrayBuffer();
+  try {
+    const res = await fetch(fontInfo.url);
+    const fontBuffer = res.arrayBuffer();
 
-  const font = await fontBuffer
-    .then((buffer) => Module.decompress(buffer))
-    .then((buffer) => opentype.parse(Uint8Array.from(buffer).buffer));
+    const font = await fontBuffer
+      .then((buffer) => Module.decompress(buffer))
+      .then((buffer) => opentype.parse(Uint8Array.from(buffer).buffer));
 
-  loadedFonts[fontInfo.id] = font;
+    loadedFonts[fontInfo.id] = font;
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 export async function loadFonts() {
