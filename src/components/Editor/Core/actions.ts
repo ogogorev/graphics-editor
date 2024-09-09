@@ -10,8 +10,11 @@ import {
 
 // TODO: Move away from array to objects?
 
-export const createDraggingAction = (x: number, y: number): DraggingAction => {
-  return [EditorActionType.Dragging, { x, y }];
+export const createDraggingAction = (
+  startX: number,
+  startY: number
+): DraggingAction => {
+  return [EditorActionType.Dragging, { startX, startY }];
 };
 
 export const createSelectedElementAction = (): SelectedElementAction => {
@@ -19,18 +22,18 @@ export const createSelectedElementAction = (): SelectedElementAction => {
 };
 
 export const createResizingAction = (
-  x: number,
-  y: number,
+  startX: number,
+  startY: number,
   direction: ElementBoxPosition
 ): ResizingAction => {
-  return [EditorActionType.Resizing, { x, y, direction }];
+  return [EditorActionType.Resizing, { startX, startY, direction }];
 };
 
 export const createMovingCanvasAction = (
-  x: number,
-  y: number
+  startX: number,
+  startY: number
 ): MovingCanvasAction => {
-  return [EditorActionType.MovingCanvas, { startX: x, startY: y }];
+  return [EditorActionType.MovingCanvas, { startX, startY }];
 };
 
 export const isDraggingAction = (

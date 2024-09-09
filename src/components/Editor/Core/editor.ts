@@ -11,10 +11,16 @@ import {
   getInnerBox,
   isPointInBox,
   transformBox,
+  getRenderingHash,
 } from "./utils";
-import { ElementBoxPosition, OUTER_BOX_OFFSET } from "./consts";
+import {
+  ElementBoxPosition,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  OUTER_BOX_OFFSET,
+} from "./consts";
 import { Canvas } from "./canvas";
-import { EditorAction, Element, ElementType, Position } from "./types";
+import { EditorAction, Element, Position } from "./types";
 import { KeyboardEvent } from "react";
 import {
   createDraggingAction,
@@ -26,10 +32,6 @@ import {
   isResizingAction,
   isSelectedElementAction,
 } from "./actions";
-
-// TODO: Move to consts
-const MIN_ZOOM = 0.25;
-const MAX_ZOOM = 8;
 
 export class Editor {
   canvas: Canvas;
@@ -290,7 +292,8 @@ export class Editor {
       const activeElement = this.getActiveElement();
 
       if (isText(activeElement)) {
-        activeElement.setLabel(event.currentTarget.value);
+        // @ts-expect-error
+        activeElement.setLabel(event.target.value);
 
         this.update();
       }
@@ -351,19 +354,12 @@ export class Editor {
   finishDragging = () => {
     if (!isDraggingAction(this.currentAction)) return;
 
-    const dx = this.cursorX - this.currentAction[1].x;
-    const dy = this.cursorY - this.currentAction[1].y;
+    const dx = this.cursorX - this.currentAction[1].startX;
+    const dy = this.cursorY - this.currentAction[1].startY;
 
     const activeElement = this.elements[this.activeElementI];
 
-    // TODO: Use setProps here
-
-    activeElement.x = activeElement.x + dx;
-    activeElement.y = activeElement.y + dy;
-
-    // TODO: This call is probably not needed here
-    // @ts-expect-error
-    activeElement.updateBox();
+    activeElement.setProps(activeElement.x + dx, activeElement.y + dy);
   };
 
   finishResizing = () => {
@@ -371,16 +367,14 @@ export class Editor {
 
     const activeElement = this.getActiveElement();
 
-    if (!isText(activeElement)) return;
-
     activeElement.setProps(
       ...calculateResizedElementPosition(
         activeElement,
         this.currentAction[1].direction,
         this.cursorX,
         this.cursorY,
-        this.currentAction[1].x,
-        this.currentAction[1].y
+        this.currentAction[1].startX,
+        this.currentAction[1].startY
       )
     );
 
@@ -510,8 +504,8 @@ export class Editor {
     const activeElement = this.elements[this.activeElementI];
 
     if (isDraggingAction(this.currentAction)) {
-      const dx = activeElement.x + this.cursorX - this.currentAction[1].x;
-      const dy = activeElement.y + this.cursorY - this.currentAction[1].y;
+      const dx = activeElement.x + this.cursorX - this.currentAction[1].startX;
+      const dy = activeElement.y + this.cursorY - this.currentAction[1].startY;
 
       this.canvas.drawElement(activeElement, dx, dy);
     }
@@ -530,7 +524,7 @@ export class Editor {
     }
 
     if (isResizingAction(this.currentAction)) {
-      const { x: startX, y: startY, direction } = this.currentAction[1];
+      const { startX, startY, direction } = this.currentAction[1];
 
       const [x, y, scaleX, scaleY] = calculateResizedElementPosition(
         activeElement,
@@ -558,36 +552,3 @@ export class Editor {
     }
   };
 }
-
-// TODO: Move somewhere
-const getRenderingHash = (
-  elements: Element[],
-  zoom: number,
-  x: number,
-  y: number
-) => {
-  let str = String(zoom + x + y);
-
-  for (let i = 0; i < elements.length; i++) {
-    str += getRenderingHashForElement(elements[i]);
-  }
-
-  return str;
-};
-
-const getRenderingHashForElement = (element: Element) => {
-  if (element.type === ElementType.Text) {
-    return [
-      element.x,
-      element.y,
-      element.scaleX,
-      element.scaleY,
-      element.localBox.x1,
-      element.localBox.y1,
-      element.localBox.x2,
-      element.localBox.y2,
-    ].join("");
-  }
-
-  return "";
-};

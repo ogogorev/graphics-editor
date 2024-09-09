@@ -1,3 +1,4 @@
+import { isText } from "./elements/Text";
 import { ElementBoxPosition } from "./consts";
 import { Box, Element, Position } from "./types";
 
@@ -111,7 +112,7 @@ export const isPointInBox = (x: number, y: number, box: Box) => {
   return x > box.x1 && y > box.y1 && x < box.x2 && y < box.y2;
 };
 
-// TODO: I should return a vector here
+// TODO: A vector should be returned here?
 export const getElementBoxPosition = (
   x: number,
   y: number,
@@ -188,4 +189,36 @@ export const setDocumentCursor = (cursor?: string) => {
   if (document.body.style.cursor !== cursor) {
     document.body.style.cursor = cursor ?? "";
   }
+};
+
+export const getRenderingHash = (
+  elements: Element[],
+  zoom: number,
+  x: number,
+  y: number
+) => {
+  let str = String(zoom + x + y);
+
+  for (let i = 0; i < elements.length; i++) {
+    str += getRenderingHashForElement(elements[i]);
+  }
+
+  return str;
+};
+
+export const getRenderingHashForElement = (element: Element) => {
+  if (isText(element)) {
+    return [
+      element.x,
+      element.y,
+      element.scaleX,
+      element.scaleY,
+      element.localBox.x1,
+      element.localBox.y1,
+      element.localBox.x2,
+      element.localBox.y2,
+    ].join("");
+  }
+
+  return "";
 };

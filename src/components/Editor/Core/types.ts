@@ -9,16 +9,16 @@ export enum EditorActionType {
   MovingCanvas = "MovingCanvas",
 }
 
-// TODO: Rename x, y to startX, startY
 export type DraggingAction = [
   EditorActionType.Dragging,
-  { x: number; y: number }
+  { startX: number; startY: number }
 ];
-// TODO: Rename x, y to startX, startY
+
 export type ResizingAction = [
   EditorActionType.Resizing,
-  { x: number; y: number; direction: ElementBoxPosition }
+  { startX: number; startY: number; direction: ElementBoxPosition }
 ];
+
 export type MovingCanvasAction = [
   EditorActionType.MovingCanvas,
   { startX: number; startY: number }
@@ -65,4 +65,6 @@ export type Element = {
   h: number;
   localBox: Box;
   innerBox: Box;
+
+  setProps: (x: number, y: number, scaleX?: number, scaleY?: number) => void;
 };

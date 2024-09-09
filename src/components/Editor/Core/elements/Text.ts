@@ -35,7 +35,7 @@ export class Text implements Element {
     this.update();
   };
 
-  setProps = (x: number, y: number, scaleX: number, scaleY: number) => {
+  setProps = (x: number, y: number, scaleX?: number, scaleY?: number) => {
     if (x != null) this.x = x;
     if (y != null) this.y = y;
     if (scaleX != null) this.scaleX = scaleX;
@@ -70,7 +70,6 @@ export class Text implements Element {
   }
 }
 
-// TODO: Create own file for this
 export const isText = (element: Element): element is Text => {
   return element.type === ElementType.Text;
 };

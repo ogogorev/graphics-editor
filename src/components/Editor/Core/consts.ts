@@ -5,6 +5,9 @@ export const SELECTION_BOX_OFFSET = SELECTION_BOX_CONTROL_POINT_SIZE / 2;
 
 export const SELECTION_COLOR = "#34b4eb";
 
+export const MIN_ZOOM = 0.25;
+export const MAX_ZOOM = 8;
+
 export enum ElementBoxPosition {
   InnerBox = "InnerBox",
   TopLeft = "TopLeft",
