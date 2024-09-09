@@ -3,17 +3,23 @@ import {
   SELECTION_BOX_OFFSET,
   SELECTION_COLOR,
 } from "./consts";
+import { Box, Element, ElementType, Font } from "./types";
 
 const W = window.innerWidth;
 const H = window.innerHeight;
 
 export class Canvas {
-  constructor(canvasId) {
-    console.log({ w: window.innerWidth, k: window.innerHeight });
+  cnv: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
-    this.cnv = document.getElementById(canvasId);
+  offscreenCanvas: OffscreenCanvas;
 
-    console.log("init canvas", window.devicePixelRatio);
+  constructor(canvasId: string) {
+    this.cnv = document.getElementById(canvasId) as HTMLCanvasElement;
+
+    if (!this.cnv) {
+      throw new Error(`Canvas with id ${canvasId} not found`);
+    }
 
     const dpi = window.devicePixelRatio;
 
@@ -23,12 +29,18 @@ export class Canvas {
     this.cnv.width = W * dpi;
     this.cnv.height = H * dpi;
 
-    this.ctx = this.cnv.getContext("2d");
+    this.ctx = this.cnv.getContext("2d")!;
 
     this.offscreenCanvas = new OffscreenCanvas(W * dpi, H * dpi);
   }
 
-  addListeners = (handlers) => {
+  addListeners = (handlers: {
+    onMouseDown: (e: MouseEvent) => void;
+    onMouseMove: (e: MouseEvent) => void;
+    onMouseUp: (e: MouseEvent) => void;
+    onWheel: (e: WheelEvent) => void;
+    onClick: (e: MouseEvent) => void;
+  }) => {
     this.cnv.addEventListener("mousedown", handlers.onMouseDown);
     this.cnv.addEventListener("mousemove", handlers.onMouseMove);
     this.cnv.addEventListener("mouseup", handlers.onMouseUp);
@@ -46,7 +58,14 @@ export class Canvas {
     return H;
   }
 
-  drawRect = (x, y, w, h, fillColor, strokeColor) => {
+  drawRect = (
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    fillColor?: string,
+    strokeColor?: string
+  ) => {
     if (fillColor) {
       this.ctx.fillStyle = fillColor;
       this.ctx.fillRect(x, y, w, h);
@@ -58,11 +77,11 @@ export class Canvas {
     }
   };
 
-  drawTextWithFont = (font, label, x, y) => {
+  drawTextWithFont = (font: Font, label: string, x: number, y: number) => {
     font.draw(this.ctx, label, x, y);
   };
 
-  drawSelectionBox = (box) => {
+  drawSelectionBox = (box: Box) => {
     const x = box.x1;
     const y = box.y1;
     const w = box.x2 - box.x1;
@@ -114,13 +133,19 @@ export class Canvas {
     );
   };
 
-  drawElementContent = (element) => {
-    if (element.type === "text") {
+  drawElementContent = (element: Element) => {
+    if (element.type === ElementType.Text) {
       this.drawTextWithFont(element.font, element.label, 0, element.fontSize);
     }
   };
 
-  drawElement = (element, x, y, scaleX, scaleY) => {
+  drawElement = (
+    element: Element,
+    x: number,
+    y: number,
+    scaleX: number,
+    scaleY: number
+  ) => {
     this.ctx.save();
 
     this.ctx.translate(x ?? element.x, y ?? element.y);
@@ -131,7 +156,12 @@ export class Canvas {
     this.ctx.restore();
   };
 
-  drawDashedLine = (startX, startY, endX, endY) => {
+  drawDashedLine = (
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number
+  ) => {
     this.ctx.beginPath();
     this.ctx.strokeStyle = "green";
     this.ctx.setLineDash([5, 5]);
@@ -147,7 +177,12 @@ export class Canvas {
     this.ctx.restore();
   };
 
-  prepareFrameOnCtx = (ctx, zoom, x, y) => {
+  prepareFrameOnCtx = (
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    zoom: number,
+    x: number,
+    y: number
+  ) => {
     ctx.reset();
 
     const dpi = window.devicePixelRatio;
@@ -159,20 +194,20 @@ export class Canvas {
     ctx.translate(x, y);
   };
 
-  prepareFrame = (zoom, x, y) => {
+  prepareFrame = (zoom: number, x: number, y: number) => {
     this.prepareFrameOnCtx(this.ctx, zoom, x, y);
   };
 
-  prepareStaticFrame = (zoom, x, y) => {
-    this.ctx = this.offscreenCanvas.getContext("2d");
-    this.prepareFrameOnCtx(this.offscreenCanvas.getContext("2d"), zoom, x, y);
+  prepareStaticFrame = (zoom: number, x: number, y: number) => {
+    this.ctx = this.offscreenCanvas.getContext("2d")!;
+    this.prepareFrameOnCtx(this.offscreenCanvas.getContext("2d")!, zoom, x, y);
   };
 
   finishStaticFrame = () => {
-    this.ctx = this.cnv.getContext("2d");
+    this.ctx = this.cnv.getContext("2d")!;
   };
 
-  drawStaticFrame = (zoom, x, y) => {
+  drawStaticFrame = (zoom: number, x: number, y: number) => {
     this.ctx.drawImage(
       this.offscreenCanvas,
       0,

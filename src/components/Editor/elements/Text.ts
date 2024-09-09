@@ -1,8 +1,10 @@
+// @ts-expect-error missing declaration
 import { FONTS, loadedFonts } from "../fonts";
+import { Element, ElementType } from "../types";
 import { getInnerBox } from "../utils";
 
-export class Text {
-  type = "text";
+export class Text implements Element {
+  type = ElementType.Text;
 
   label;
   path;
@@ -16,23 +18,24 @@ export class Text {
 
   localBox;
 
-  constructor(label, x, y) {
+  constructor(label: string, x: number, y: number) {
     this.label = label;
     this.x = x;
     this.y = y;
 
     this.font = loadedFonts[FONTS.SankofaDisplay.id];
 
-    this.update();
+    this.path = this.font.getPath(this.label, 0, this.fontSize, this.fontSize);
+    this.localBox = this.path.getBoundingBox();
   }
 
-  setLabel = (newLabel) => {
+  setLabel = (newLabel: string) => {
     this.label = newLabel;
 
     this.update();
   };
 
-  setProps = (x, y, scaleX, scaleY) => {
+  setProps = (x: number, y: number, scaleX: number, scaleY: number) => {
     if (x != null) this.x = x;
     if (y != null) this.y = y;
     if (scaleX != null) this.scaleX = scaleX;

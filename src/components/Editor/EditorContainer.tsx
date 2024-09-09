@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 
-// @ts-expect-error missing declaration
 import { Canvas } from "./canvas";
 // @ts-expect-error missing declaration
 import { Editor } from "./editor";

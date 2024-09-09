@@ -1,24 +1,25 @@
-import { ELEMENT_BOX_POSITION } from "./consts";
+import { ElementBoxPosition } from "./consts";
+import { Box, Element, Position } from "./types";
 
-export const getVectorByPosition = (position) => {
+export const getVectorByPosition = (position: ElementBoxPosition) => {
   switch (position) {
-    case ELEMENT_BOX_POSITION.TopLeft:
+    case ElementBoxPosition.TopLeft:
       return [-1, -1];
-    case ELEMENT_BOX_POSITION.BottomRight:
+    case ElementBoxPosition.BottomRight:
       return [1, 1];
-    case ELEMENT_BOX_POSITION.TopRight:
+    case ElementBoxPosition.TopRight:
       return [1, -1];
-    case ELEMENT_BOX_POSITION.BottomLeft:
+    case ElementBoxPosition.BottomLeft:
       return [-1, 1];
-    case ELEMENT_BOX_POSITION.Left:
+    case ElementBoxPosition.Left:
       return [-1, 0];
-    case ELEMENT_BOX_POSITION.Right:
+    case ElementBoxPosition.Right:
       return [1, 0];
-    case ELEMENT_BOX_POSITION.Top:
+    case ElementBoxPosition.Top:
       return [0, -1];
-    case ELEMENT_BOX_POSITION.Bottom:
+    case ElementBoxPosition.Bottom:
       return [0, 1];
-    case ELEMENT_BOX_POSITION.InnerBox:
+    case ElementBoxPosition.InnerBox:
     default:
       return [0, 0];
   }
@@ -26,12 +27,12 @@ export const getVectorByPosition = (position) => {
 
 // TODO: Rename
 export const calculateResizedElementPosition = (
-  element,
-  direction,
-  mouseCurrX,
-  mouseCurrY,
-  mouseStartX,
-  mouseStartY
+  element: Element,
+  direction: ElementBoxPosition,
+  mouseCurrX: number,
+  mouseCurrY: number,
+  mouseStartX: number,
+  mouseStartY: number
 ) => {
   const [kX, kY] = getVectorByPosition(direction);
 
@@ -68,7 +69,13 @@ export const calculateResizedElementPosition = (
 };
 
 // TODO: Should be renamed. Should be clear that it translates and scales
-export const getInnerBox = (x, y, localBox, scaleX, scaleY) => {
+export const getInnerBox = (
+  x: number,
+  y: number,
+  localBox: Box,
+  scaleX: number,
+  scaleY: number
+) => {
   return {
     x1: x + localBox.x1 * scaleX,
     y1: y + localBox.y1 * scaleY,
@@ -77,7 +84,7 @@ export const getInnerBox = (x, y, localBox, scaleX, scaleY) => {
   };
 };
 
-export const expandBox = (box, offset) => {
+export const expandBox = (box: Box, offset: number) => {
   return {
     x1: box.x1 - offset,
     y1: box.y1 - offset,
@@ -86,7 +93,10 @@ export const expandBox = (box, offset) => {
   };
 };
 
-export const transformBox = (box, transformPositionFn) => {
+export const transformBox = (
+  box: Box,
+  transformPositionFn: (x: number, y: number) => Position
+) => {
   const transformed1 = transformPositionFn(box.x1, box.y1);
   const transformed2 = transformPositionFn(box.x2, box.y2);
   return {
@@ -97,76 +107,78 @@ export const transformBox = (box, transformPositionFn) => {
   };
 };
 
-export const isPointInBox = (x, y, box) => {
+export const isPointInBox = (x: number, y: number, box: Box) => {
   return x > box.x1 && y > box.y1 && x < box.x2 && y < box.y2;
 };
 
 // TODO: I should return a vector here
-export const getElementBoxPosition = (x, y, innerBox) => {
+export const getElementBoxPosition = (x: number, y: number, innerBox: Box) => {
   if (
     x > innerBox.x1 &&
     x < innerBox.x2 &&
     y > innerBox.y1 &&
     y < innerBox.y2
   ) {
-    return ELEMENT_BOX_POSITION.InnerBox;
+    return ElementBoxPosition.InnerBox;
   }
 
   if (x <= innerBox.x1 && y <= innerBox.y1) {
-    return ELEMENT_BOX_POSITION.TopLeft;
+    return ElementBoxPosition.TopLeft;
   }
 
   if (x >= innerBox.x2 && y <= innerBox.y1) {
-    return ELEMENT_BOX_POSITION.TopRight;
+    return ElementBoxPosition.TopRight;
   }
 
   if (x <= innerBox.x1 && y >= innerBox.y2) {
-    return ELEMENT_BOX_POSITION.BottomLeft;
+    return ElementBoxPosition.BottomLeft;
   }
 
   if (x >= innerBox.x2 && y >= innerBox.y2) {
-    return ELEMENT_BOX_POSITION.BottomRight;
+    return ElementBoxPosition.BottomRight;
   }
 
   if (x <= innerBox.x1) {
-    return ELEMENT_BOX_POSITION.Left;
+    return ElementBoxPosition.Left;
   }
 
   if (x >= innerBox.x2) {
-    return ELEMENT_BOX_POSITION.Right;
+    return ElementBoxPosition.Right;
   }
 
   if (y <= innerBox.y1) {
-    return ELEMENT_BOX_POSITION.Top;
+    return ElementBoxPosition.Top;
   }
 
   if (y >= innerBox.y2) {
-    return ELEMENT_BOX_POSITION.Bottom;
+    return ElementBoxPosition.Bottom;
   }
 };
 
-export const getCursorForElementBoxPosition = (position) => {
+export const getCursorForElementBoxPosition = (
+  position: ElementBoxPosition
+) => {
   switch (position) {
-    case ELEMENT_BOX_POSITION.InnerBox:
+    case ElementBoxPosition.InnerBox:
       return "grab";
-    case ELEMENT_BOX_POSITION.TopLeft:
-    case ELEMENT_BOX_POSITION.BottomRight:
+    case ElementBoxPosition.TopLeft:
+    case ElementBoxPosition.BottomRight:
       return "nwse-resize";
-    case ELEMENT_BOX_POSITION.TopRight:
-    case ELEMENT_BOX_POSITION.BottomLeft:
+    case ElementBoxPosition.TopRight:
+    case ElementBoxPosition.BottomLeft:
       return "nesw-resize";
-    case ELEMENT_BOX_POSITION.Left:
-    case ELEMENT_BOX_POSITION.Right:
+    case ElementBoxPosition.Left:
+    case ElementBoxPosition.Right:
       return "ew-resize";
-    case ELEMENT_BOX_POSITION.Top:
-    case ELEMENT_BOX_POSITION.Bottom:
+    case ElementBoxPosition.Top:
+    case ElementBoxPosition.Bottom:
       return "ns-resize";
     default:
       return "";
   }
 };
 
-export const setDocumentCursor = (cursor) => {
+export const setDocumentCursor = (cursor: string) => {
   if (document.body.style.cursor !== cursor) {
     document.body.style.cursor = cursor ?? "";
   }

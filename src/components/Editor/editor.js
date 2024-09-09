@@ -11,7 +11,7 @@ import {
   isPointInBox,
   transformBox,
 } from "./utils.js";
-import { ELEMENT_BOX_POSITION, OUTER_BOX_OFFSET } from "./consts.js";
+import { ElementBoxPosition, OUTER_BOX_OFFSET } from "./consts";
 
 const ACTIONS = {
   Dragging: "Dragging",
@@ -212,7 +212,7 @@ export class Editor {
         this.elements[elementI].innerBox
       );
 
-      if (position === ELEMENT_BOX_POSITION.InnerBox) {
+      if (position === ElementBoxPosition.InnerBox) {
         this.startDragging();
       } else if (this.currentAction[0] === ACTIONS.SelectedElement) {
         this.setCurrentAction(
