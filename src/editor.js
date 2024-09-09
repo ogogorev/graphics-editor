@@ -5,14 +5,12 @@ import {
   getCursorForElementBoxPosition,
   getElementBoxPosition,
   setDocumentCursor,
-} from "./utils.js";
-import {
   calculateResizedElementPosition,
   expandBox,
   getInnerBox,
   isPointInBox,
   transformBox,
-} from "./geometry.js";
+} from "./utils.js";
 import { ELEMENT_BOX_POSITION, OUTER_BOX_OFFSET } from "./consts.js";
 
 const ACTIONS = {
