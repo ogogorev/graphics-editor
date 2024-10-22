@@ -46,6 +46,7 @@ import {
   getStaticElements,
   $renderingKey,
 } from "./state";
+import { log } from "../../../debug";
 
 export class Editor {
   canvas: Canvas;
@@ -85,14 +86,17 @@ export class Editor {
     });
 
     this.canvas.addListeners({
-      onMouseDown: this.handleMouseDown,
-      onMouseMove: this.handleMouseMove,
-      onMouseUp: this.handleMouseUp,
+      onMouseDown: this.onMouseDown,
+      onMouseMove: this.onMouseMove,
+      onMouseUp: this.onMouseUp,
       onWheel: this.handleWheel,
+      onTouchStart: this.handleTouchStart,
+      onTouchMove: this.handleTouchMove,
+      onTouchEnd: this.handleTouchEnd,
     });
 
     const label = "Random";
-    const x = 800;
+    const x = 10;
     const y = 200;
 
     const text = new Text(label, "red", x, y);
@@ -190,12 +194,18 @@ export class Editor {
   };
 
   // TODO: Set actions in mouse move first
-  handleMouseDown = (event: MouseEvent) => {
-    this.setCursorPosition(event.offsetX, event.offsetY);
+  onMouseDown = (event: MouseEvent) => {
+    this.handleEventDown(event.offsetX, event.offsetY);
+  };
+
+  handleEventDown = (x: number, y: number) => {
+    log('handleEventDown', { x, y });
+
+    this.setCursorPosition(x, y);
 
     const elementI = this.checkColisionsAtXY(this.cursorX, this.cursorY);
 
-    console.log({ elementI });
+    log({ elementI });
 
     if (elementI > -1) {
       setActiveElementIndex(elementI);
@@ -221,17 +231,25 @@ export class Editor {
     }
 
     this.startUpdating();
+  }
+
+  onMouseMove = (event: MouseEvent) => {
+    this.handleEventMove(event.offsetX, event.offsetY)
   };
 
-  handleMouseMove = (event: MouseEvent) => {
+  handleEventMove = (x: number, y: number) => {
     if (isActionSet(getCurrentAction())) {
-      this.setCursorPosition(event.offsetX, event.offsetY);
+      this.setCursorPosition(x, y);
     }
 
-    this.updateCursor(...this.getLogicalPosition(event.offsetX, event.offsetY));
-  };
+    this.updateCursor(x, y);
+  }
 
-  handleMouseUp = () => {
+  onMouseUp = () => {
+    this.handleEventUp();
+  }
+
+  handleEventUp = () => {
     this.stopUpdating();
 
     console.log("mouse up");
@@ -278,6 +296,33 @@ export class Editor {
         this.stopUpdating();
       }, 100);
     }
+  };
+
+  handleTouchStart = (event: TouchEvent) => {
+    log("touch start");
+
+    event.preventDefault();
+
+    const touch = event.touches[0];
+
+    this.handleEventDown(touch.clientX, touch.clientY);
+  };
+
+  handleTouchMove = (event: TouchEvent) => {
+    log("touch move");
+
+    event.preventDefault();
+
+    const touch = event.touches[0];
+    this.handleEventMove(touch.clientX, touch.clientY);
+  };
+
+  handleTouchEnd = (event: TouchEvent) => {
+    log("touch end");
+
+    event.preventDefault();
+
+    this.handleEventUp();
   };
 
   handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -417,7 +462,7 @@ export class Editor {
       input.addEventListener("keydown", this.handleKeyDown);
 
       input.value = activeElement.label;
-      input.focus();
+      // input.focus();
     }
   };
 
@@ -474,6 +519,8 @@ export class Editor {
 
     const currentAction = getCurrentAction();
     const activeElementI = getActiveElementIndex();
+
+    log('currentAction', currentAction);
 
     let frameOffsetX = this.viewportOffsetX;
     let frameOffsetY = this.viewportOffsetY;
