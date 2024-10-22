@@ -32,6 +32,8 @@ export const EditorContainer = () => {
 
       <canvas id="canvas"></canvas>
       <input id="edit-text" />
+
+      <p id="debug-container"></p>
     </div>
   );
 };
