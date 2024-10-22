@@ -31,7 +31,7 @@ export const EditorContainer = () => {
       <ElementDetails />
 
       <canvas id="canvas"></canvas>
-      <input id="edit-text" />
+      {/* <input id="edit-text" /> */}
 
       <p id="debug-container"></p>
     </div>
