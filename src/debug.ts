@@ -20,6 +20,10 @@ const writeLogs = () => {
 }
 
 export const log = (...args: any) => {
+  if (import.meta.env.MODE !== 'development') {
+    return;
+  }
+
   logQueue.push(args);
 
   if (!clearIntervalId) {
