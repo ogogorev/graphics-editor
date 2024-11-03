@@ -19,19 +19,22 @@ import {
   MAX_ZOOM,
   MIN_ZOOM,
   OUTER_BOX_OFFSET,
+  ZOOM_SENSITIVITY,
 } from "./consts";
 import { Canvas } from "./canvas";
-import { Position } from "./types";
+import { EditorAction, EditorActionType, Position } from "./types";
 import {
   createDraggingAction,
   createMovingCanvasAction,
   createResizingAction,
   createSelectedElementAction,
+  createZoomingAction,
   isActionSet,
   isDraggingAction,
   isMovingCanvasAction,
   isResizingAction,
   isSelectedElementAction,
+  isZoomingAction,
 } from "./actions";
 import {
   getCurrentAction,
@@ -46,16 +49,19 @@ import {
   getStaticElements,
   $renderingKey,
 } from "./state";
-import { log } from "../../../debug";
 
 export class Editor {
   canvas: Canvas;
 
-  // TODO: define a var with mouse pos and in canvas position?
-  // TODO: Consider initializing to undefined
-  // and having a function to throw an error if cursor is not set
-  cursorX = -1;
-  cursorY = -1;
+  touch1X = 0;
+  touch1Y = 0;
+  touch2X = 0;
+  touch2Y = 0;
+
+  physicalTouch1X = 0;
+  physicalTouch1Y = 0;
+  physicalTouch2X = 0;
+  physicalTouch2Y = 0;
 
   zoom = 1;
 
@@ -111,7 +117,7 @@ export class Editor {
     });
   };
 
-  updateViewport = (
+  calculateNewViewport = (
     zoom?: number,
     dx?: number,
     dy?: number,
@@ -120,9 +126,7 @@ export class Editor {
   ) => {
     // Deliberately assuming that zoom is not provided in such a case
     if (dx != null && dy != null) {
-      this.viewportOffsetX -= dx;
-      this.viewportOffsetY -= dy;
-      return;
+      return [this.zoom, this.viewportOffsetX - dx, this.viewportOffsetY - dy];
     }
 
     focusX = focusX ?? this.canvas.w / 2;
@@ -146,12 +150,50 @@ export class Editor {
     const newOffsetX = zoomedFocusX - ratioX * newW;
     const newOffsetY = zoomedFocusY - ratioY * newH;
 
-    console.log("updateViewport", { zoom, focusX, newW, newOffsetX });
+    // console.log("getViewport", { zoom, focusX, newW, newOffsetX });
 
+    return [zoom, newOffsetX, newOffsetY];
+  };
+
+  setViewport = (zoom: number, newOffsetX: number, newOffsetY: number) => {
     this.zoom = zoom;
     this.viewportOffsetX = newOffsetX;
     this.viewportOffsetY = newOffsetY;
-  };
+  }
+
+  updateViewport = (
+    ...args: Parameters<typeof this.calculateNewViewport>
+  ) => {
+    const newViewport = this.calculateNewViewport(...args);
+    this.setViewport(newViewport[0], newViewport[1], newViewport[2]);
+  }
+
+  calculatePinchZoom = (startTouchPoints: Position[], currentTouchPoints: Position[]) => {
+    console.log('calculatePinchZoom', { startTouchPoints, currentTouchPoints })
+    const [startPoint1, startPoint2] = startTouchPoints;
+    const [currentPoint1, currentPoint2] = currentTouchPoints;
+
+    const initialDist = Math.hypot(startPoint1[0] - startPoint2[0], startPoint1[1] - startPoint2[1]);
+    const currDist = Math.hypot(currentPoint1[0] - currentPoint2[0], currentPoint1[1] - currentPoint2[1]);
+    const dist = currDist - initialDist;
+
+    const newZoom = this.zoom * Math.pow(2, dist / ZOOM_SENSITIVITY);
+
+    const focusX = (startPoint1[0] + startPoint2[0]) / 2;
+    const focusY = (startPoint1[1] + startPoint2[1]) / 2;
+
+    console.log('calc Zoom', { oldZoom: this.zoom, newZoom, dist });
+
+    const [zoom, frameOffsetX, frameOffsetY] = this.calculateNewViewport(
+      newZoom,
+      undefined,
+      undefined,
+      focusX,
+      focusY
+    );
+
+    return [zoom, frameOffsetX, frameOffsetY];
+  }
 
   getPhysicalX = (x: number) =>
     ((x - this.viewportOffsetX) * this.canvas.w) / (this.canvas.w / this.zoom);
@@ -171,16 +213,36 @@ export class Editor {
     ];
   };
 
-  setCursorPosition = (x?: number, y?: number) => {
-    if (x == null || y == null) {
-      this.cursorX = -1;
-      this.cursorY = -1;
-      return;
+  setTouchPosition = (x1?: number, y1?: number, x2?: number, y2?: number) => {
+    console.log('set touch pos', x1, y1, x2, y2);
+
+    if (x1 == null || y1 == null) {
+      this.physicalTouch1X = -1;
+      this.physicalTouch1Y = -1;
+      this.touch1X = -1;
+      this.touch1Y = -1;
+    } else {
+      this.physicalTouch1X = x1;
+      this.physicalTouch1Y = y1;
+
+      const canvasPosition1 = this.getLogicalPosition(x1, y1);
+      this.touch1X = canvasPosition1[0];
+      this.touch1Y = canvasPosition1[1];
     }
 
-    const canvasPosition = this.getLogicalPosition(x, y);
-    this.cursorX = canvasPosition[0];
-    this.cursorY = canvasPosition[1];
+    if (x2 == null || y2 == null) {
+      this.physicalTouch2X = -1;
+      this.physicalTouch2Y = -1;
+      this.touch2X = -1;
+      this.touch2Y = -1;
+    } else {
+      this.physicalTouch2X = x2;
+      this.physicalTouch2Y = y2;
+
+      const canvasPosition2 = this.getLogicalPosition(x2, y2);
+      this.touch2X = canvasPosition2[0];
+      this.touch2Y = canvasPosition2[1];
+    }
   };
 
   handleZoomInClick = () => {
@@ -193,56 +255,69 @@ export class Editor {
     this.update();
   };
 
-  // TODO: Set actions in mouse move first
   onMouseDown = (event: MouseEvent) => {
     this.handleEventDown(event.offsetX, event.offsetY);
   };
 
-  handleEventDown = (x: number, y: number) => {
-    log('handleEventDown', { x, y });
+  // TODO: Replace all arrow functions with regular functions?
+  handleEventDown = (...args: number[]) => {
+    console.log('handleEventDown', { args });
 
-    this.setCursorPosition(x, y);
+    if (args[0] == null || args[1] == null) return;
 
-    const elementI = this.checkColisionsAtXY(this.cursorX, this.cursorY);
+    this.setTouchPosition(...args);
 
-    log({ elementI });
+    if (args[2] == null && args[3] == null) {
+      const elementI = this.checkColisionsAtXY(this.touch1X, this.touch1Y);
 
-    if (elementI > -1) {
-      setActiveElementIndex(elementI);
+      if (elementI > -1) {
+        setActiveElementIndex(elementI);
 
-      const activeElement = getActiveElement();
+        const activeElement = getActiveElement();
 
-      const position = getElementBoxPosition(
-        this.cursorX,
-        this.cursorY,
-        activeElement.innerBox
-      );
-
-      if (position === ElementBoxPosition.InnerBox) {
-        this.startDragging();
-      } else if (isSelectedElementAction(getCurrentAction())) {
-        setCurrentAction(
-          createResizingAction(this.cursorX, this.cursorY, position)
+        const position = getElementBoxPosition(
+          this.touch1X,
+          this.touch1Y,
+          activeElement.innerBox
         );
+
+        if (position === ElementBoxPosition.InnerBox) {
+          this.startDragging();
+        } else if (isSelectedElementAction(getCurrentAction())) {
+          setCurrentAction(
+            createResizingAction(this.touch1X, this.touch1Y, position)
+          );
+        }
+      } else {
+        resetActiveElement();
+        // TODO: This should be overwritten. It should not be assumed that if there is no activeElement, then it's "movingCanvas" action
+        setCurrentAction(createMovingCanvasAction(this.touch1X, this.touch1Y));
       }
-    } else {
-      resetActiveElement();
-      setCurrentAction(createMovingCanvasAction(this.cursorX, this.cursorY));
     }
 
     this.startUpdating();
   }
 
   onMouseMove = (event: MouseEvent) => {
-    this.handleEventMove(event.offsetX, event.offsetY)
+    this.handleEventMove(event.offsetX, event.offsetY);
   };
 
-  handleEventMove = (x: number, y: number) => {
+  handleEventMove = (...args: number[]) => {
+    const currentAction = getCurrentAction();
+    console.log('debug handleEventMove', [...args]);
+
     if (isActionSet(getCurrentAction())) {
-      this.setCursorPosition(x, y);
+      this.setTouchPosition(...args);
     }
 
-    this.updateCursor(x, y);
+    if (args[0] != null && args[1] != null && args[2] != null && args[3] != null) {
+      if (!isZoomingAction(currentAction)) {
+        this.setTouchPosition(...args);
+        this.setAction(createZoomingAction([[this.physicalTouch1X, this.physicalTouch1Y], [this.physicalTouch2X, this.physicalTouch2Y]]));
+      }
+    }
+
+    this.updateCursor(args[0], args[1]);
   }
 
   onMouseUp = () => {
@@ -272,7 +347,11 @@ export class Editor {
       this.finishMovingCanvas();
     }
 
-    this.setCursorPosition();
+    if (isZoomingAction(getCurrentAction())) {
+      this.finishZooming();
+    }
+
+    this.setTouchPosition();
 
     this.update();
   };
@@ -299,26 +378,33 @@ export class Editor {
   };
 
   handleTouchStart = (event: TouchEvent) => {
-    log("touch start");
+    console.log("touch start", { touches: event.touches });
 
     event.preventDefault();
 
-    const touch = event.touches[0];
-
-    this.handleEventDown(touch.clientX, touch.clientY);
+    this.handleEventDown(
+      event.touches[0]?.clientX,
+      event.touches[0]?.clientY,
+      event.touches[1]?.clientX,
+      event.touches[1]?.clientY
+    );
   };
 
   handleTouchMove = (event: TouchEvent) => {
-    log("touch move");
+    console.log("touch move", { touhces: event.touches });
 
     event.preventDefault();
 
-    const touch = event.touches[0];
-    this.handleEventMove(touch.clientX, touch.clientY);
+    this.handleEventMove(
+      event.touches[0]?.clientX,
+      event.touches[0]?.clientY,
+      event.touches[1]?.clientX,
+      event.touches[1]?.clientY
+    );
   };
 
   handleTouchEnd = (event: TouchEvent) => {
-    log("touch end");
+    console.log("touch end", { touches: event.touches });
 
     event.preventDefault();
 
@@ -398,8 +484,30 @@ export class Editor {
     }
   };
 
+  // This method (and everything related to actions) should not be in editor
+  // Rename to "switch" action
+  setAction = (action?: EditorAction) => {
+    const currentAction = getCurrentAction();
+    switch (currentAction[0]) {
+      case EditorActionType.Dragging:
+        this.finishDragging();
+        this.deselectElement();
+        break;
+      case EditorActionType.MovingCanvas:
+        this.finishMovingCanvas();
+        break;
+      case EditorActionType.SelectedElement:
+        this.deselectElement();
+        break;
+    }
+
+    if (action) {
+      setCurrentAction(action);
+    }
+  }
+
   startDragging = () => {
-    setCurrentAction(createDraggingAction(this.cursorX, this.cursorY));
+    setCurrentAction(createDraggingAction(this.touch1X, this.touch1Y));
     setDocumentCursor("grabbing");
   };
 
@@ -407,8 +515,8 @@ export class Editor {
     const currentAction = getCurrentAction();
     if (!isDraggingAction(currentAction)) return;
 
-    const dx = this.cursorX - currentAction[1].startX;
-    const dy = this.cursorY - currentAction[1].startY;
+    const dx = this.touch1X - currentAction[1].startX;
+    const dy = this.touch1Y - currentAction[1].startY;
 
     const activeElement = getActiveElement();
 
@@ -426,8 +534,8 @@ export class Editor {
       ...calculateResizedElementPosition(
         activeElement,
         currentAction[1].direction,
-        this.cursorX,
-        this.cursorY,
+        this.touch1X,
+        this.touch1Y,
         currentAction[1].startX,
         currentAction[1].startY
       )
@@ -441,12 +549,28 @@ export class Editor {
 
     if (!isMovingCanvasAction(currentAction)) return;
 
-    const dx = this.cursorX - currentAction[1].startX;
-    const dy = this.cursorY - currentAction[1].startY;
+    const dx = this.touch1X - currentAction[1].startX;
+    const dy = this.touch1Y - currentAction[1].startY;
 
     this.updateViewport(undefined, dx, dy);
     resetCurrentAction();
   };
+
+  finishZooming = () => {
+    const currentAction = getCurrentAction();
+
+    if (!isZoomingAction(currentAction)) return;
+
+    const newViewport = this.calculatePinchZoom(
+      currentAction[1],
+      [[this.physicalTouch1X, this.physicalTouch1Y], [this.physicalTouch2X, this.physicalTouch2Y]],
+    );
+
+    console.log('debug finishZooming', { newViewport });
+
+    this.setViewport(newViewport[0], newViewport[1], newViewport[2]);
+    resetCurrentAction();
+  }
 
   selectElement = (i: number) => {
     setActiveElementIndex(i);
@@ -513,24 +637,32 @@ export class Editor {
   };
 
   doUpdate = () => {
-    console.log("do update");
+    console.log("do update", this.touch1X);
 
     ////// PREPARE FRAME //////
 
     const currentAction = getCurrentAction();
     const activeElementI = getActiveElementIndex();
 
-    log('currentAction', currentAction);
+    console.log('currentAction', currentAction[0]);
 
     let frameOffsetX = this.viewportOffsetX;
     let frameOffsetY = this.viewportOffsetY;
+    let zoom = this.zoom;
 
     if (isMovingCanvasAction(currentAction)) {
-      frameOffsetX -= this.cursorX - currentAction[1].startX;
-      frameOffsetY -= this.cursorY - currentAction[1].startY;
+      frameOffsetX -= this.touch1X - currentAction[1].startX;
+      frameOffsetY -= this.touch1Y - currentAction[1].startY;
     }
 
-    this.canvas.prepareFrame(this.zoom, -frameOffsetX, -frameOffsetY);
+    if (isZoomingAction(currentAction)) {
+      [zoom, frameOffsetX, frameOffsetY] = this.calculatePinchZoom(
+        currentAction[1],
+        [[this.physicalTouch1X, this.physicalTouch1Y], [this.physicalTouch2X, this.physicalTouch2Y]],
+      );
+    }
+
+    this.canvas.prepareFrame(zoom, -frameOffsetX, -frameOffsetY);
 
     ////// DRAW STATIC ELEMENTS //////
 
@@ -538,7 +670,7 @@ export class Editor {
 
     const nextElementsHash = getRenderingHash(
       staticElements,
-      this.zoom,
+      zoom,
       -frameOffsetX,
       -frameOffsetY
     );
@@ -546,7 +678,7 @@ export class Editor {
     if (nextElementsHash !== this.elementsHash) {
       this.elementsHash = nextElementsHash;
 
-      this.canvas.prepareStaticFrame(this.zoom, -frameOffsetX, -frameOffsetY);
+      this.canvas.prepareStaticFrame(zoom, -frameOffsetX, -frameOffsetY);
 
       for (let i = 0; i < staticElements.length; i++) {
         this.canvas.drawElement(staticElements[i]);
@@ -555,7 +687,7 @@ export class Editor {
       this.canvas.finishStaticFrame();
     }
 
-    this.canvas.drawStaticFrame(this.zoom, -frameOffsetX, -frameOffsetY);
+    this.canvas.drawStaticFrame(zoom, -frameOffsetX, -frameOffsetY);
 
     ////// DRAW ACTIVE ELEMENT //////
 
@@ -566,8 +698,8 @@ export class Editor {
     const activeElement = getActiveElement();
 
     if (isDraggingAction(currentAction)) {
-      const dx = activeElement.x + this.cursorX - currentAction[1].startX;
-      const dy = activeElement.y + this.cursorY - currentAction[1].startY;
+      const dx = activeElement.x + this.touch1X - currentAction[1].startX;
+      const dy = activeElement.y + this.touch1Y - currentAction[1].startY;
 
       this.canvas.drawElement(activeElement, dx, dy);
     }
@@ -591,8 +723,8 @@ export class Editor {
       const [x, y, scaleX, scaleY] = calculateResizedElementPosition(
         activeElement,
         direction,
-        this.cursorX,
-        this.cursorY,
+        this.touch1X,
+        this.touch1Y,
         startX,
         startY
       );

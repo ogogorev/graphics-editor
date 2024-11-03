@@ -7,6 +7,7 @@ export enum EditorActionType {
   SelectedElement = "Selected",
   Resizing = "Resizing",
   MovingCanvas = "MovingCanvas",
+  Zooming = "Zooming",
 }
 
 export type DraggingAction = [
@@ -24,13 +25,20 @@ export type MovingCanvasAction = [
   { startX: number; startY: number }
 ];
 
+
+export type ZoomingAction = [
+  EditorActionType.Zooming,
+  Position[],
+];
+
 export type SelectedElementAction = [EditorActionType.SelectedElement];
 
 export type EditorAction =
   | DraggingAction
   | ResizingAction
   | MovingCanvasAction
-  | SelectedElementAction;
+  | SelectedElementAction
+  | ZoomingAction;
 
 export type Box = {
   x1: number;

@@ -4,6 +4,8 @@ import {
   EditorAction,
   EditorActionType,
   MovingCanvasAction,
+  ZoomingAction,
+  Position,
   ResizingAction,
   SelectedElementAction,
 } from "./types";
@@ -36,6 +38,12 @@ export const createMovingCanvasAction = (
   return [EditorActionType.MovingCanvas, { startX, startY }];
 };
 
+export const createZoomingAction = (
+  touchPoints: Position[]
+): ZoomingAction => {
+  return [EditorActionType.Zooming, touchPoints];
+};
+
 export const isDraggingAction = (
   action: EditorAction | []
 ): action is DraggingAction => {
@@ -59,6 +67,13 @@ export const isMovingCanvasAction = (
 ): action is MovingCanvasAction => {
   return action[0] === EditorActionType.MovingCanvas;
 };
+
+export const isZoomingAction = (
+  action: EditorAction | []
+): action is ZoomingAction => {
+  return action[0] === EditorActionType.Zooming;
+};
+
 
 export const isActionSet = (
   action: EditorAction | []
