@@ -126,6 +126,7 @@ export class Editor {
   ) => {
     // Deliberately assuming that zoom is not provided in such a case
     if (dx != null && dy != null) {
+      // TODO: Throw an error if zoom is provided in this case (Im not expecting it)
       return [this.zoom, this.viewportOffsetX - dx, this.viewportOffsetY - dy];
     }
 

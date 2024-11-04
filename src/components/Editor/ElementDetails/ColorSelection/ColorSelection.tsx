@@ -21,7 +21,7 @@ export const ColorSelection: FC<ColorSelection> = ({
           className="color-button"
           style={{
             backgroundColor: color,
-            boxShadow: color === selectedColor ? `0 0 0 2px ${color}` : "none",
+            boxShadow: color === selectedColor ? `0 0 0 4px ${color}` : "none",
           }}
           onClick={() => onColorSelect(color)}
           type="button"
