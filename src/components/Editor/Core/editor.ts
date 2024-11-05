@@ -29,7 +29,6 @@ import {
   createResizingAction,
   createSelectedElementAction,
   createZoomingAction,
-  isActionSet,
   isDraggingAction,
   isMovingCanvasAction,
   isResizingAction,
@@ -97,9 +96,9 @@ export class Editor {
       onMouseMove: this.onMouseMove,
       onMouseUp: this.onMouseUp,
       onWheel: this.handleWheel,
-      onTouchStart: this.handleTouchStart,
-      onTouchMove: this.handleTouchMove,
-      onTouchEnd: this.handleTouchEnd,
+      onTouchStart: this.onTouchStart,
+      onTouchMove: this.onTouchMove,
+      onTouchEnd: this.onTouchEnd,
     });
 
     const label = "Random";
@@ -258,83 +257,137 @@ export class Editor {
   };
 
   onMouseDown = (event: MouseEvent) => {
-    this.handleEventDown(event.offsetX, event.offsetY);
+    this.handleDown(event.offsetX, event.offsetY);
+  };
+
+  onMouseMove = (event: MouseEvent) => {
+    this.handleMove(event.offsetX, event.offsetY);
+  };
+
+  onMouseUp = () => {
+    this.handleUp();
+  }
+
+  onTouchStart = (event: TouchEvent) => {
+    console.log("touch start", { touches: event.touches });
+
+    event.preventDefault();
+    this.handleDown(
+      event.touches[0]?.clientX,
+      event.touches[0]?.clientY,
+      event.touches[1]?.clientX,
+      event.touches[1]?.clientY
+    );
+  };
+
+  onTouchMove = (event: TouchEvent) => {
+    console.log("touch move", { touhces: event.touches });
+
+    event.preventDefault();
+    this.handleMove(
+      event.touches[0]?.clientX,
+      event.touches[0]?.clientY,
+      event.touches[1]?.clientX,
+      event.touches[1]?.clientY
+    );
+  };
+
+  onTouchEnd = (event: TouchEvent) => {
+    console.log("touch end", { touches: event.touches });
+
+    event.preventDefault();
+    this.handleUp();
+  };
+
+  handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    console.log("key down", event);
+
+    if (!isSelectedElementAction(getCurrentAction())) {
+      return;
+    }
+
+    if (event.key === "Escape") {
+      this.deselectElement();
+      this.update();
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      const activeElement = getActiveElement();
+
+      if (isText(activeElement)) {
+        // @ts-expect-error a type issue with value
+        activeElement.setLabel(event.target.value);
+
+        this.update();
+      }
+
+      clearTimeout(timeoutId);
+    }, 0);
   };
 
   // TODO: Using args is not very readable
-  // TODO: Replace all arrow functions with regular functions?
-  handleEventDown = (...args: number[]) => {
-    console.log('handleEventDown', { args });
+  handleDown = (...args: number[]) => {
+    console.log('handleDown', { args });
 
     if (args[0] == null || args[1] == null) return;
 
     this.setTouchPosition(...args);
 
-    // TODO: Too many nested ifs here
-    if (args[2] == null && args[3] == null) {
-      const elementI = this.checkColisionsAtXY(this.touch1X, this.touch1Y);
+    if (args[2] != null || args[3] != null) return;
 
-      if (elementI > -1) {
-        if (getActiveElementIndex() === elementI) {
-          // TODO: This all should be overwritten: startDragging should receive index of the element to drag and then set active element 
-          const activeElement = getActiveElement();
+    const hoveredElementI = this.checkColisionsAtXY(this.touch1X, this.touch1Y);
 
-          const position = getElementBoxPosition(
-            this.touch1X,
-            this.touch1Y,
-            activeElement.innerBox
-          );
+    if (hoveredElementI < 0) {
+      resetActiveElement();
+      setCurrentAction(createMovingCanvasAction(this.touch1X, this.touch1Y));
+    }
 
-          if (position === ElementBoxPosition.InnerBox) {
-            this.startDragging();
-          } else {
-            setCurrentAction(
-              createResizingAction(this.touch1X, this.touch1Y, position)
-            );
-          }
-        } else {
-          setActiveElementIndex(elementI);
+    if (hoveredElementI > -1 && hoveredElementI === getActiveElementIndex()) {
+      const activeElement = getActiveElement();
+
+      const position = getElementBoxPosition(
+        this.touch1X,
+        this.touch1Y,
+        activeElement.innerBox
+      );
+
+      switch (position) {
+        case ElementBoxPosition.InnerBox:
           this.startDragging();
-        }
-      } else {
-        resetActiveElement();
-        setCurrentAction(createMovingCanvasAction(this.touch1X, this.touch1Y));
+          break;
+        default:
+          setCurrentAction(
+            createResizingAction(this.touch1X, this.touch1Y, position)
+          );
       }
+    }
+
+    if (hoveredElementI > -1 && hoveredElementI !== getActiveElementIndex()) {
+      setActiveElementIndex(hoveredElementI);
+      this.startDragging();
     }
 
     this.startUpdating();
   }
 
-  onMouseMove = (event: MouseEvent) => {
-    this.handleEventMove(event.offsetX, event.offsetY);
-  };
+  handleMove = (...args: number[]) => {
+    // console.log('debug handleMove', [...args]);
 
-  handleEventMove = (...args: number[]) => {
+    this.setTouchPosition(...args);
+
     const currentAction = getCurrentAction();
-    // console.log('debug handleEventMove', [...args]);
-
-    if (isActionSet(getCurrentAction())) {
-      this.setTouchPosition(...args);
+    if (args[0] != null && args[1] != null && args[2] != null && args[3] != null && !isZoomingAction(currentAction)) {
+      this.setAction(createZoomingAction([[this.physicalTouch1X, this.physicalTouch1Y], [this.physicalTouch2X, this.physicalTouch2Y]]));
     }
 
-    if (args[0] != null && args[1] != null && args[2] != null && args[3] != null) {
-      if (!isZoomingAction(currentAction)) {
-        this.setTouchPosition(...args);
-        this.setAction(createZoomingAction([[this.physicalTouch1X, this.physicalTouch1Y], [this.physicalTouch2X, this.physicalTouch2Y]]));
-      }
-    }
-
-    this.updateCursor(...this.getLogicalPosition(args[0], args[1]));
+    this.updateCursor(this.touch1X, this.touch1Y);
   }
 
-  onMouseUp = () => {
-    this.handleEventUp();
-  }
-
-  handleEventUp = () => {
-    this.stopUpdating();
-
+  handleUp = () => {
     console.log("mouse up");
+
+    this.stopUpdating();
 
     if (isSelectedElementAction(getCurrentAction())) {
       this.deselectElement();
@@ -382,67 +435,6 @@ export class Editor {
         this.stopUpdating();
       }, 100);
     }
-  };
-
-  handleTouchStart = (event: TouchEvent) => {
-    console.log("touch start", { touches: event.touches });
-
-    event.preventDefault();
-
-    this.handleEventDown(
-      event.touches[0]?.clientX,
-      event.touches[0]?.clientY,
-      event.touches[1]?.clientX,
-      event.touches[1]?.clientY
-    );
-  };
-
-  handleTouchMove = (event: TouchEvent) => {
-    console.log("touch move", { touhces: event.touches });
-
-    event.preventDefault();
-
-    this.handleEventMove(
-      event.touches[0]?.clientX,
-      event.touches[0]?.clientY,
-      event.touches[1]?.clientX,
-      event.touches[1]?.clientY
-    );
-  };
-
-  handleTouchEnd = (event: TouchEvent) => {
-    console.log("touch end", { touches: event.touches });
-
-    event.preventDefault();
-
-    this.handleEventUp();
-  };
-
-  handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    console.log("key down", event);
-
-    if (!isSelectedElementAction(getCurrentAction())) {
-      return;
-    }
-
-    if (event.key === "Escape") {
-      this.deselectElement();
-      this.update();
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      const activeElement = getActiveElement();
-
-      if (isText(activeElement)) {
-        // @ts-expect-error a type issue with value
-        activeElement.setLabel(event.target.value);
-
-        this.update();
-      }
-
-      clearTimeout(timeoutId);
-    }, 0);
   };
 
   // TODO: May be a separate function
