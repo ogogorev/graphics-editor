@@ -260,6 +260,7 @@ export class Editor {
     this.handleEventDown(event.offsetX, event.offsetY);
   };
 
+  // TODO: Using args is not very readable
   // TODO: Replace all arrow functions with regular functions?
   handleEventDown = (...args: number[]) => {
     console.log('handleEventDown', { args });
@@ -268,30 +269,34 @@ export class Editor {
 
     this.setTouchPosition(...args);
 
+    // TODO: Too many nested ifs here
     if (args[2] == null && args[3] == null) {
       const elementI = this.checkColisionsAtXY(this.touch1X, this.touch1Y);
 
       if (elementI > -1) {
-        setActiveElementIndex(elementI);
+        if (getActiveElementIndex() === elementI) {
+          // TODO: This all should be overwritten: startDragging should receive index of the element to drag and then set active element 
+          const activeElement = getActiveElement();
 
-        const activeElement = getActiveElement();
-
-        const position = getElementBoxPosition(
-          this.touch1X,
-          this.touch1Y,
-          activeElement.innerBox
-        );
-
-        if (position === ElementBoxPosition.InnerBox) {
-          this.startDragging();
-        } else if (isSelectedElementAction(getCurrentAction())) {
-          setCurrentAction(
-            createResizingAction(this.touch1X, this.touch1Y, position)
+          const position = getElementBoxPosition(
+            this.touch1X,
+            this.touch1Y,
+            activeElement.innerBox
           );
+
+          if (position === ElementBoxPosition.InnerBox) {
+            this.startDragging();
+          } else {
+            setCurrentAction(
+              createResizingAction(this.touch1X, this.touch1Y, position)
+            );
+          }
+        } else {
+          setActiveElementIndex(elementI);
+          this.startDragging();
         }
       } else {
         resetActiveElement();
-        // TODO: This should be overwritten. It should not be assumed that if there is no activeElement, then it's "movingCanvas" action
         setCurrentAction(createMovingCanvasAction(this.touch1X, this.touch1Y));
       }
     }
@@ -305,7 +310,7 @@ export class Editor {
 
   handleEventMove = (...args: number[]) => {
     const currentAction = getCurrentAction();
-    console.log('debug handleEventMove', [...args]);
+    // console.log('debug handleEventMove', [...args]);
 
     if (isActionSet(getCurrentAction())) {
       this.setTouchPosition(...args);
@@ -638,14 +643,14 @@ export class Editor {
   };
 
   doUpdate = () => {
-    console.log("do update", this.touch1X);
+    // console.log("do update", this.touch1X);
 
     ////// PREPARE FRAME //////
 
     const currentAction = getCurrentAction();
     const activeElementI = getActiveElementIndex();
 
-    console.log('currentAction', currentAction[0]);
+    console.log('currentAction', currentAction);
 
     let frameOffsetX = this.viewportOffsetX;
     let frameOffsetY = this.viewportOffsetY;

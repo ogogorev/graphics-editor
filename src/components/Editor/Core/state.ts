@@ -42,6 +42,10 @@ export const addElement = (element: Element) => {
   $elements.set([...$elements.get(), element]);
 };
 
+export const getElement = (index: number) => {
+  return $elements.get()[index];
+}
+
 // TODO: Use computed here
 export const getStaticElements = () => {
   const activeElementI = getActiveElementIndex();
