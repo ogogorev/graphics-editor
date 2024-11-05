@@ -48,6 +48,7 @@ import {
   getElements,
   getStaticElements,
   $renderingKey,
+  getElement,
 } from "./state";
 
 export class Editor {
@@ -323,7 +324,7 @@ export class Editor {
       }
     }
 
-    this.updateCursor(args[0], args[1]);
+    this.updateCursor(...this.getLogicalPosition(args[0], args[1]));
   }
 
   onMouseUp = () => {
@@ -460,38 +461,33 @@ export class Editor {
   };
 
   updateCursor = (x: number, y: number) => {
-    if (
-      isDraggingAction(getCurrentAction()) ||
-      isResizingAction(getCurrentAction())
-    ) {
-      return;
+    switch (getCurrentAction()[0]) {
+      case EditorActionType.Dragging:
+      case EditorActionType.Resizing:
+      case EditorActionType.Zooming:
+        return;
+      case EditorActionType.MovingCanvas:
+        setDocumentCursor("all-scroll");
+        return;
+      case EditorActionType.SelectedElement:
+      default:
+        const hoveredElementI = this.checkColisionsAtXY(x, y);
+
+        if (hoveredElementI < 0) {
+          setDocumentCursor();
+          return;
+        }
+
+        if (hoveredElementI === getActiveElementIndex()) {
+          const innerBox = getElement(hoveredElementI).innerBox;
+          const position = getElementBoxPosition(x, y, innerBox);
+          setDocumentCursor(getCursorForElementBoxPosition(position));
+        } else {
+          setDocumentCursor("grab");
+        }
     }
+  }
 
-    if (isMovingCanvasAction(getCurrentAction())) {
-      setDocumentCursor("all-scroll");
-      return;
-    }
-
-    const elementI = this.checkColisionsAtXY(x, y);
-
-    if (elementI < 0) {
-      setDocumentCursor();
-      return;
-    }
-
-    if (!isActionSet(getCurrentAction())) {
-      setDocumentCursor("grab");
-    }
-
-    if (isSelectedElementAction(getCurrentAction())) {
-      const innerBox = getElements()[elementI].innerBox;
-      const position = getElementBoxPosition(x, y, innerBox);
-      setDocumentCursor(getCursorForElementBoxPosition(position));
-    }
-  };
-
-  // This method (and everything related to actions) should not be in editor
-  // Rename to "switch" action
   setAction = (action?: EditorAction) => {
     const currentAction = getCurrentAction();
     switch (currentAction[0]) {
