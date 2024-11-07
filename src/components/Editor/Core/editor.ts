@@ -5,24 +5,20 @@ import { loadFonts } from "./fonts/fonts";
 import { intializeControls } from "./controls";
 import {
   getCursorForElementBoxPosition,
-  getElementBoxPosition,
   setDocumentCursor,
-  calculateResizedElementPosition,
-  expandBox,
-  getInnerBox,
-  isPointInBox,
-  transformBox,
   getRenderingHash,
 } from "./utils";
 import {
-  ElementBoxPosition,
-  MAX_ZOOM,
-  MIN_ZOOM,
-  OUTER_BOX_OFFSET,
-  ZOOM_SENSITIVITY,
-} from "./consts";
+  getElementBoxPosition,
+  calculateResizedElementPosition,
+  enlargeBoxByOffset,
+  getTranslatedInnerBox,
+  isPointInBox,
+  transformBox,
+} from "./math";
+import { ElementBoxPosition, OUTER_BOX_OFFSET } from "./consts";
 import { Canvas } from "./canvas";
-import { EditorAction, EditorActionType, Position } from "./types";
+import { EditorAction, EditorActionType } from "./types";
 import {
   createDraggingAction,
   createMovingCanvasAction,
@@ -49,24 +45,17 @@ import {
   $renderingKey,
   getElement,
 } from "./state";
+import {
+  calculatePinchZoom,
+  getPhysicalPosition,
+  renderingState,
+  setTouchPoints,
+  setViewport,
+  updateViewport,
+} from "./renderingState";
 
 export class Editor {
   canvas: Canvas;
-
-  touch1X = 0;
-  touch1Y = 0;
-  touch2X = 0;
-  touch2Y = 0;
-
-  physicalTouch1X = 0;
-  physicalTouch1Y = 0;
-  physicalTouch2X = 0;
-  physicalTouch2Y = 0;
-
-  zoom = 1;
-
-  viewportOffsetX = 0;
-  viewportOffsetY = 0;
 
   shouldUpdate = false;
 
@@ -117,142 +106,13 @@ export class Editor {
     });
   };
 
-  calculateNewViewport = (
-    zoom?: number,
-    dx?: number,
-    dy?: number,
-    focusX?: number,
-    focusY?: number
-  ) => {
-    // Deliberately assuming that zoom is not provided in such a case
-    if (dx != null && dy != null) {
-      // TODO: Throw an error if zoom is provided in this case (Im not expecting it)
-      return [this.zoom, this.viewportOffsetX - dx, this.viewportOffsetY - dy];
-    }
-
-    focusX = focusX ?? this.canvas.w / 2;
-    focusY = focusY ?? this.canvas.h / 2;
-
-    const ratioX = focusX / this.canvas.w;
-    const ratioY = focusY / this.canvas.h;
-
-    const currW = this.canvas.w / this.zoom;
-    const currH = this.canvas.h / this.zoom;
-
-    const zoomedFocusX = this.viewportOffsetX + ratioX * currW;
-    const zoomedFocusY = this.viewportOffsetY + ratioY * currH;
-
-    zoom = zoom ?? this.zoom;
-    zoom = Math.max(Math.min(zoom, MAX_ZOOM), MIN_ZOOM);
-
-    const newW = this.canvas.w / zoom;
-    const newH = this.canvas.h / zoom;
-
-    const newOffsetX = zoomedFocusX - ratioX * newW;
-    const newOffsetY = zoomedFocusY - ratioY * newH;
-
-    // console.log("getViewport", { zoom, focusX, newW, newOffsetX });
-
-    return [zoom, newOffsetX, newOffsetY];
-  };
-
-  setViewport = (zoom: number, newOffsetX: number, newOffsetY: number) => {
-    this.zoom = zoom;
-    this.viewportOffsetX = newOffsetX;
-    this.viewportOffsetY = newOffsetY;
-  }
-
-  updateViewport = (
-    ...args: Parameters<typeof this.calculateNewViewport>
-  ) => {
-    const newViewport = this.calculateNewViewport(...args);
-    this.setViewport(newViewport[0], newViewport[1], newViewport[2]);
-  }
-
-  calculatePinchZoom = (startTouchPoints: Position[], currentTouchPoints: Position[]) => {
-    console.log('calculatePinchZoom', { startTouchPoints, currentTouchPoints })
-    const [startPoint1, startPoint2] = startTouchPoints;
-    const [currentPoint1, currentPoint2] = currentTouchPoints;
-
-    const initialDist = Math.hypot(startPoint1[0] - startPoint2[0], startPoint1[1] - startPoint2[1]);
-    const currDist = Math.hypot(currentPoint1[0] - currentPoint2[0], currentPoint1[1] - currentPoint2[1]);
-    const dist = currDist - initialDist;
-
-    const newZoom = this.zoom * Math.pow(2, dist / ZOOM_SENSITIVITY);
-
-    const focusX = (startPoint1[0] + startPoint2[0]) / 2;
-    const focusY = (startPoint1[1] + startPoint2[1]) / 2;
-
-    console.log('calc Zoom', { oldZoom: this.zoom, newZoom, dist });
-
-    const [zoom, frameOffsetX, frameOffsetY] = this.calculateNewViewport(
-      newZoom,
-      undefined,
-      undefined,
-      focusX,
-      focusY
-    );
-
-    return [zoom, frameOffsetX, frameOffsetY];
-  }
-
-  getPhysicalX = (x: number) =>
-    ((x - this.viewportOffsetX) * this.canvas.w) / (this.canvas.w / this.zoom);
-
-  getPhysicalY = (y: number) =>
-    ((y - this.viewportOffsetY) * this.canvas.h) / (this.canvas.h / this.zoom);
-
-  getPhysicalPosition = (x: number, y: number): Position => [
-    this.getPhysicalX(x),
-    this.getPhysicalY(y),
-  ];
-
-  getLogicalPosition = (x: number, y: number): Position => {
-    return [
-      this.viewportOffsetX + x / this.zoom,
-      this.viewportOffsetY + y / this.zoom,
-    ];
-  };
-
-  setTouchPosition = (x1?: number, y1?: number, x2?: number, y2?: number) => {
-    console.log('set touch pos', x1, y1, x2, y2);
-
-    if (x1 == null || y1 == null) {
-      this.physicalTouch1X = -1;
-      this.physicalTouch1Y = -1;
-      this.touch1X = -1;
-      this.touch1Y = -1;
-    } else {
-      this.physicalTouch1X = x1;
-      this.physicalTouch1Y = y1;
-
-      const canvasPosition1 = this.getLogicalPosition(x1, y1);
-      this.touch1X = canvasPosition1[0];
-      this.touch1Y = canvasPosition1[1];
-    }
-
-    if (x2 == null || y2 == null) {
-      this.physicalTouch2X = -1;
-      this.physicalTouch2Y = -1;
-      this.touch2X = -1;
-      this.touch2Y = -1;
-    } else {
-      this.physicalTouch2X = x2;
-      this.physicalTouch2Y = y2;
-
-      const canvasPosition2 = this.getLogicalPosition(x2, y2);
-      this.touch2X = canvasPosition2[0];
-      this.touch2Y = canvasPosition2[1];
-    }
-  };
-
   handleZoomInClick = () => {
-    this.updateViewport(this.zoom * 2);
+    updateViewport(renderingState.zoom * 2);
     this.update();
   };
 
   handleZoomOutClick = () => {
-    this.updateViewport(this.zoom / 2);
+    updateViewport(renderingState.zoom / 2);
     this.update();
   };
 
@@ -266,7 +126,7 @@ export class Editor {
 
   onMouseUp = () => {
     this.handleUp();
-  }
+  };
 
   onTouchStart = (event: TouchEvent) => {
     console.log("touch start", { touches: event.touches });
@@ -328,27 +188,32 @@ export class Editor {
 
   // TODO: Using args is not very readable
   handleDown = (...args: number[]) => {
-    console.log('handleDown', { args });
+    console.log("handleDown", { args });
 
     if (args[0] == null || args[1] == null) return;
 
-    this.setTouchPosition(...args);
+    setTouchPoints(...args);
 
     if (args[2] != null || args[3] != null) return;
 
-    const hoveredElementI = this.checkColisionsAtXY(this.touch1X, this.touch1Y);
+    const hoveredElementI = this.checkColisionsAtXY(
+      renderingState.touch1X,
+      renderingState.touch1Y
+    );
 
     if (hoveredElementI < 0) {
       resetActiveElement();
-      setCurrentAction(createMovingCanvasAction(this.touch1X, this.touch1Y));
+      setCurrentAction(
+        createMovingCanvasAction(renderingState.touch1X, renderingState.touch1Y)
+      );
     }
 
     if (hoveredElementI > -1 && hoveredElementI === getActiveElementIndex()) {
       const activeElement = getActiveElement();
 
       const position = getElementBoxPosition(
-        this.touch1X,
-        this.touch1Y,
+        renderingState.touch1X,
+        renderingState.touch1Y,
         activeElement.innerBox
       );
 
@@ -358,7 +223,11 @@ export class Editor {
           break;
         default:
           setCurrentAction(
-            createResizingAction(this.touch1X, this.touch1Y, position)
+            createResizingAction(
+              renderingState.touch1X,
+              renderingState.touch1Y,
+              position
+            )
           );
       }
     }
@@ -369,20 +238,31 @@ export class Editor {
     }
 
     this.startUpdating();
-  }
+  };
 
   handleMove = (...args: number[]) => {
     // console.log('debug handleMove', [...args]);
 
-    this.setTouchPosition(...args);
+    setTouchPoints(...args);
 
     const currentAction = getCurrentAction();
-    if (args[0] != null && args[1] != null && args[2] != null && args[3] != null && !isZoomingAction(currentAction)) {
-      this.setAction(createZoomingAction([[this.physicalTouch1X, this.physicalTouch1Y], [this.physicalTouch2X, this.physicalTouch2Y]]));
+    if (
+      args[0] != null &&
+      args[1] != null &&
+      args[2] != null &&
+      args[3] != null &&
+      !isZoomingAction(currentAction)
+    ) {
+      this.setAction(
+        createZoomingAction([
+          [renderingState.physicalTouch1X, renderingState.physicalTouch1Y],
+          [renderingState.physicalTouch2X, renderingState.physicalTouch2Y],
+        ])
+      );
     }
 
-    this.updateCursor(this.touch1X, this.touch1Y);
-  }
+    this.updateCursor(renderingState.touch1X, renderingState.touch1Y);
+  };
 
   handleUp = () => {
     console.log("mouse up");
@@ -411,7 +291,7 @@ export class Editor {
       this.finishZooming();
     }
 
-    this.setTouchPosition();
+    setTouchPoints();
 
     this.update();
   };
@@ -419,8 +299,8 @@ export class Editor {
   handleWheel = (event: WheelEvent) => {
     console.log("wheel", event);
 
-    this.updateViewport(
-      this.zoom - event.deltaY * 0.01,
+    updateViewport(
+      renderingState.zoom - event.deltaY * 0.01,
       undefined,
       undefined,
       event.offsetX,
@@ -441,12 +321,12 @@ export class Editor {
   checkColisionsAtXY = (x: number, y: number) => {
     const elements = getElements();
     for (let i = 0; i < elements.length; i++) {
-      const outerBox = expandBox(
+      const outerBox = enlargeBoxByOffset(
         elements[i].innerBox,
-        OUTER_BOX_OFFSET / this.zoom
+        OUTER_BOX_OFFSET / renderingState.zoom
       );
 
-      if (isPointInBox(x, y, outerBox)) return i;
+      if (isPointInBox([x, y], outerBox)) return i;
     }
 
     return -1;
@@ -462,7 +342,7 @@ export class Editor {
         setDocumentCursor("all-scroll");
         return;
       case EditorActionType.SelectedElement:
-      default:
+      default: {
         const hoveredElementI = this.checkColisionsAtXY(x, y);
 
         if (hoveredElementI < 0) {
@@ -477,8 +357,9 @@ export class Editor {
         } else {
           setDocumentCursor("grab");
         }
+      }
     }
-  }
+  };
 
   setAction = (action?: EditorAction) => {
     const currentAction = getCurrentAction();
@@ -498,10 +379,12 @@ export class Editor {
     if (action) {
       setCurrentAction(action);
     }
-  }
+  };
 
   startDragging = () => {
-    setCurrentAction(createDraggingAction(this.touch1X, this.touch1Y));
+    setCurrentAction(
+      createDraggingAction(renderingState.touch1X, renderingState.touch1Y)
+    );
     setDocumentCursor("grabbing");
   };
 
@@ -509,8 +392,8 @@ export class Editor {
     const currentAction = getCurrentAction();
     if (!isDraggingAction(currentAction)) return;
 
-    const dx = this.touch1X - currentAction[1].startX;
-    const dy = this.touch1Y - currentAction[1].startY;
+    const dx = renderingState.touch1X - currentAction[1].startX;
+    const dy = renderingState.touch1Y - currentAction[1].startY;
 
     const activeElement = getActiveElement();
 
@@ -528,8 +411,8 @@ export class Editor {
       ...calculateResizedElementPosition(
         activeElement,
         currentAction[1].direction,
-        this.touch1X,
-        this.touch1Y,
+        renderingState.touch1X,
+        renderingState.touch1Y,
         currentAction[1].startX,
         currentAction[1].startY
       )
@@ -543,10 +426,10 @@ export class Editor {
 
     if (!isMovingCanvasAction(currentAction)) return;
 
-    const dx = this.touch1X - currentAction[1].startX;
-    const dy = this.touch1Y - currentAction[1].startY;
+    const dx = renderingState.touch1X - currentAction[1].startX;
+    const dy = renderingState.touch1Y - currentAction[1].startY;
 
-    this.updateViewport(undefined, dx, dy);
+    updateViewport(undefined, dx, dy);
     resetCurrentAction();
   };
 
@@ -555,16 +438,16 @@ export class Editor {
 
     if (!isZoomingAction(currentAction)) return;
 
-    const newViewport = this.calculatePinchZoom(
-      currentAction[1],
-      [[this.physicalTouch1X, this.physicalTouch1Y], [this.physicalTouch2X, this.physicalTouch2Y]],
-    );
+    const newViewport = calculatePinchZoom(currentAction[1], [
+      [renderingState.physicalTouch1X, renderingState.physicalTouch1Y],
+      [renderingState.physicalTouch2X, renderingState.physicalTouch2Y],
+    ]);
 
-    console.log('debug finishZooming', { newViewport });
+    console.log("debug finishZooming", { newViewport });
 
-    this.setViewport(newViewport[0], newViewport[1], newViewport[2]);
+    setViewport(newViewport[0], newViewport[1], newViewport[2]);
     resetCurrentAction();
-  }
+  };
 
   selectElement = (i: number) => {
     setActiveElementIndex(i);
@@ -631,28 +514,31 @@ export class Editor {
   };
 
   doUpdate = () => {
-    // console.log("do update", this.touch1X);
+    // console.log("do update", renderingState.touch1X);
 
     ////// PREPARE FRAME //////
 
     const currentAction = getCurrentAction();
     const activeElementI = getActiveElementIndex();
 
-    console.log('currentAction', currentAction);
+    console.log("currentAction", currentAction);
 
-    let frameOffsetX = this.viewportOffsetX;
-    let frameOffsetY = this.viewportOffsetY;
-    let zoom = this.zoom;
+    let frameOffsetX = renderingState.viewportOffsetX;
+    let frameOffsetY = renderingState.viewportOffsetY;
+    let zoom = renderingState.zoom;
 
     if (isMovingCanvasAction(currentAction)) {
-      frameOffsetX -= this.touch1X - currentAction[1].startX;
-      frameOffsetY -= this.touch1Y - currentAction[1].startY;
+      frameOffsetX -= renderingState.touch1X - currentAction[1].startX;
+      frameOffsetY -= renderingState.touch1Y - currentAction[1].startY;
     }
 
     if (isZoomingAction(currentAction)) {
-      [zoom, frameOffsetX, frameOffsetY] = this.calculatePinchZoom(
+      [zoom, frameOffsetX, frameOffsetY] = calculatePinchZoom(
         currentAction[1],
-        [[this.physicalTouch1X, this.physicalTouch1Y], [this.physicalTouch2X, this.physicalTouch2Y]],
+        [
+          [renderingState.physicalTouch1X, renderingState.physicalTouch1Y],
+          [renderingState.physicalTouch2X, renderingState.physicalTouch2Y],
+        ]
       );
     }
 
@@ -692,8 +578,10 @@ export class Editor {
     const activeElement = getActiveElement();
 
     if (isDraggingAction(currentAction)) {
-      const dx = activeElement.x + this.touch1X - currentAction[1].startX;
-      const dy = activeElement.y + this.touch1Y - currentAction[1].startY;
+      const dx =
+        activeElement.x + renderingState.touch1X - currentAction[1].startX;
+      const dy =
+        activeElement.y + renderingState.touch1Y - currentAction[1].startY;
 
       this.canvas.drawElement(activeElement, dx, dy);
     }
@@ -705,9 +593,9 @@ export class Editor {
 
       const transformedBox = transformBox(
         activeElement.innerBox,
-        this.getPhysicalPosition
+        getPhysicalPosition
       );
-      const selectionBox = expandBox(transformedBox, OUTER_BOX_OFFSET);
+      const selectionBox = enlargeBoxByOffset(transformedBox, OUTER_BOX_OFFSET);
       this.canvas.drawSelectionBox(selectionBox);
     }
 
@@ -717,8 +605,8 @@ export class Editor {
       const [x, y, scaleX, scaleY] = calculateResizedElementPosition(
         activeElement,
         direction,
-        this.touch1X,
-        this.touch1Y,
+        renderingState.touch1X,
+        renderingState.touch1Y,
         startX,
         startY
       );
@@ -727,15 +615,15 @@ export class Editor {
 
       this.canvas.restoreTransform();
 
-      const innerBox = getInnerBox(
+      const innerBox = getTranslatedInnerBox(
         x,
         y,
         activeElement.localBox,
         scaleX,
         scaleY
       );
-      const transformedBox = transformBox(innerBox, this.getPhysicalPosition);
-      const selectionBox = expandBox(transformedBox, OUTER_BOX_OFFSET);
+      const transformedBox = transformBox(innerBox, getPhysicalPosition);
+      const selectionBox = enlargeBoxByOffset(transformedBox, OUTER_BOX_OFFSET);
       this.canvas.drawSelectionBox(selectionBox);
     }
   };

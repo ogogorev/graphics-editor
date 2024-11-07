@@ -2,6 +2,8 @@ import { atom, computed } from "nanostores";
 
 import { EditorAction, Element } from "./types";
 
+// TODO: Create folder for every type of actions and split this file
+
 //////// RENDERING STATE ////////
 
 export const $renderingKey = atom<number>(1);

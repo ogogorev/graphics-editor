@@ -1,6 +1,26 @@
 import { ElementBoxPosition } from "./consts";
 
-export type Position = [number, number];
+export type RenderingState = {
+  w: number;
+  h: number;
+
+  touch1X: number;
+  touch1Y: number;
+  touch2X: number;
+  touch2Y: number;
+
+  physicalTouch1X: number;
+  physicalTouch1Y: number;
+  physicalTouch2X: number;
+  physicalTouch2Y: number;
+
+  zoom: number;
+
+  viewportOffsetX: number;
+  viewportOffsetY: number;
+};
+
+export type Point = [number, number];
 
 export enum EditorActionType {
   Dragging = "Dragging",
@@ -28,7 +48,7 @@ export type MovingCanvasAction = [
 
 export type ZoomingAction = [
   EditorActionType.Zooming,
-  Position[],
+  Point[],
 ];
 
 export type SelectedElementAction = [EditorActionType.SelectedElement];

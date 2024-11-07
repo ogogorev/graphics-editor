@@ -1,7 +1,7 @@
 import { loadedFonts } from "../fonts/fonts";
 import { FontId, OpentypeFont } from "../fonts/types";
 import { Element, ElementType, OpentypePath } from "../types";
-import { getInnerBox } from "../utils";
+import { getTranslatedInnerBox } from "../math";
 
 export class Text implements Element {
   type = ElementType.Text;
@@ -85,7 +85,13 @@ export class Text implements Element {
   }
 
   get innerBox() {
-    return getInnerBox(this.x, this.y, this.localBox, this.scaleX, this.scaleY);
+    return getTranslatedInnerBox(
+      this.x,
+      this.y,
+      this.localBox,
+      this.scaleX,
+      this.scaleY
+    );
   }
 }
 
