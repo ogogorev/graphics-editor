@@ -194,6 +194,8 @@ export class Editor {
 
     setTouchPoints(...args);
 
+    this.startUpdating();
+
     if (args[2] != null || args[3] != null) return;
 
     const hoveredElementI = this.checkColisionsAtXY(
@@ -236,8 +238,6 @@ export class Editor {
       setActiveElementIndex(hoveredElementI);
       this.startDragging();
     }
-
-    this.startUpdating();
   };
 
   handleMove = (...args: number[]) => {
