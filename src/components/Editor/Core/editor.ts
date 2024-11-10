@@ -47,6 +47,7 @@ import {
 } from "./state";
 import {
   calculatePinchZoom,
+  getLogicalPosition,
   getPhysicalPosition,
   renderingState,
   setTouchPoints,
@@ -156,7 +157,12 @@ export class Editor {
     console.log("touch end", { touches: event.touches });
 
     event.preventDefault();
-    this.handleUp();
+    this.handleUp(
+      event.touches[0]?.clientX,
+      event.touches[0]?.clientY,
+      event.touches[1]?.clientX,
+      event.touches[1]?.clientY
+    );
   };
 
   handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -210,6 +216,12 @@ export class Editor {
       );
     }
 
+    if (hoveredElementI > -1 && hoveredElementI !== getActiveElementIndex()) {
+      setActiveElementIndex(hoveredElementI);
+      this.startDragging();
+      return;
+    }
+
     if (hoveredElementI > -1 && hoveredElementI === getActiveElementIndex()) {
       const activeElement = getActiveElement();
 
@@ -219,29 +231,27 @@ export class Editor {
         activeElement.innerBox
       );
 
-      switch (position) {
-        case ElementBoxPosition.InnerBox:
-          this.startDragging();
-          break;
-        default:
-          setCurrentAction(
-            createResizingAction(
-              renderingState.touch1X,
-              renderingState.touch1Y,
-              position
-            )
-          );
+      if (position === ElementBoxPosition.InnerBox) {
+        this.startDragging();
+      } else {
+        setCurrentAction(
+          createResizingAction(
+            renderingState.touch1X,
+            renderingState.touch1Y,
+            position
+          )
+        );
       }
-    }
-
-    if (hoveredElementI > -1 && hoveredElementI !== getActiveElementIndex()) {
-      setActiveElementIndex(hoveredElementI);
-      this.startDragging();
     }
   };
 
   handleMove = (...args: number[]) => {
-    // console.log('debug handleMove', [...args]);
+    console.log('debug handleMove', [...args]);
+
+    if (renderingState.touch1X === -1) {
+      this.updateCursor(args[0], args[1]);
+      return;
+    }
 
     setTouchPoints(...args);
 
@@ -261,37 +271,45 @@ export class Editor {
       );
     }
 
-    this.updateCursor(renderingState.touch1X, renderingState.touch1Y);
+    this.startUpdating();
   };
 
-  handleUp = () => {
+  handleUp = (...args: number[]) => {
     console.log("mouse up");
 
     this.stopUpdating();
 
-    if (isSelectedElementAction(getCurrentAction())) {
+    const currentAction = getCurrentAction();
+
+    if (isSelectedElementAction(currentAction)) {
       this.deselectElement();
     }
 
-    if (isDraggingAction(getCurrentAction())) {
+    if (isDraggingAction(currentAction)) {
       this.finishDragging();
       this.selectElement(getActiveElementIndex());
     }
 
-    if (isResizingAction(getCurrentAction())) {
+    if (isResizingAction(currentAction)) {
       this.finishResizing();
       this.selectElement(getActiveElementIndex());
     }
 
-    if (isMovingCanvasAction(getCurrentAction())) {
+    if (isMovingCanvasAction(currentAction)) {
       this.finishMovingCanvas();
     }
 
-    if (isZoomingAction(getCurrentAction())) {
+    if (isZoomingAction(currentAction)) {
       this.finishZooming();
+
+      if (args[0] != null && args[1] != null) {
+        setCurrentAction(
+          createMovingCanvasAction(...getLogicalPosition([args[0], args[1]]))
+        );
+      }
     }
 
-    setTouchPoints();
+    setTouchPoints(...args);
 
     this.update();
   };
